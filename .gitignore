@@ -1,0 +1,16 @@
+# Android app build output and signing key (never commit the keystore or its password)
+status-app/build/
+status-app/keystore/
+*.jks
+*.keystore
+*.apk
+*.idsig
+password.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db

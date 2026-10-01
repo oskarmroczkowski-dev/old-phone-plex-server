@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Server Status</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #000;
+    --fg: #c8ccd2;
+    --muted: #80868f;
+    --faint: #2a2e34;
+    --ok: #3f9e66;
+    --warn: #c9a227;
+    --crit: #cc5540;
+    --plex: #c4962c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--fg); overflow: hidden; }
+  body { font-family: Roboto, "Segoe UI", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  #main {
+    height: 100%; padding: 5vh 7vw 2.5vh; display: flex; flex-direction: column; justify-content: space-between;
+    transition: transform 2s ease;
+  }
+  #main > * { flex-shrink: 0; }
+  body.night #main, body.night #hint { display: none; }
+
+  .clock { font-size: 22vw; font-weight: 200; line-height: .95; letter-spacing: -.02em; font-variant-numeric: tabular-nums; text-align: center; }
+  .clock .hm { position: relative; display: inline-block; }
+  .clock small { position: absolute; left: 100%; bottom: .1em; font-size: 7vw; color: var(--muted); margin-left: 1.5vw; }
+  .date { font-size: 5vw; color: var(--muted); margin-top: .8vh; text-align: center; }
+  .date::first-letter { text-transform: uppercase; }
+
+  h2 { font-size: 3.2vw; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 1vh; }
+  .row { display: flex; align-items: center; gap: 3.5vw; }
+  .wx-icon { font-size: 11vw; line-height: 1; filter: saturate(.7) brightness(.85); }
+  .wx-temp { font-size: 12vw; font-weight: 200; line-height: 1; }
+  .wx-desc { font-size: 4.4vw; }
+  .sub { font-size: 3.7vw; color: var(--muted); line-height: 1.5; }
+  .hours { display: flex; justify-content: space-between; margin-top: 1.2vh; padding-top: 1.1vh; border-top: 1px solid var(--faint); }
+  .hours div { text-align: center; font-size: 3.4vw; color: var(--muted); line-height: 1.35; }
+  .hours b { display: block; font-size: 4.2vw; font-weight: 400; color: var(--fg); }
+  .hours i { display: block; font-style: normal; font-size: 5vw; filter: saturate(.7) brightness(.85); }
+
+  .dot { display: inline-block; width: 2.6vw; height: 2.6vw; border-radius: 50%; background: var(--ok); margin-right: 2vw; vertical-align: middle; }
+  .dot.off { background: var(--crit); }
+  .plex-line { font-size: 4.4vw; }
+  .sess { margin-top: 1.1vh; }
+  .sess .t { font-size: 4.4vw; line-height: 1.3; }
+  .sess .t span { color: var(--plex); }
+  .bar { height: .8vh; background: var(--faint); border-radius: 1vh; overflow: hidden; margin-top: 1vh; }
+  .bar > div { height: 100%; background: var(--muted); border-radius: 1vh; }
+
+  .disk { margin-bottom: 1.2vh; }
+  .disk .top { display: flex; justify-content: space-between; font-size: 3.9vw; }
+  .disk .top span:last-child { color: var(--muted); }
+  .disk .top span.alarm { color: var(--crit); }
+  .disk .bar > div.ok { background: var(--ok); }
+  .disk .bar > div.warn { background: var(--warn); }
+  .disk .bar > div.crit { background: var(--crit); }
+
+  .sys { display: flex; flex-wrap: wrap; gap: .6vh 6vw; font-size: 3.8vw; color: var(--muted); }
+  .sys b { color: var(--fg); font-weight: 400; }
+  .foot { font-size: 3vw; color: #4d525a; }
+  .foot.stale { color: var(--crit); }
+
+  #hint {
+    display: none; position: fixed; left: 0; right: 0; bottom: 3vh; text-align: center; font-size: 3.6vw; color: var(--muted);
+  }
+
+  @media (orientation: landscape) {
+    #main { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: 4vh 6vw; padding: 5vh 5vw; }
+    .clock { font-size: 15vw; }
+    .clock small { font-size: 5vw; }
+    .date, .wx-desc, .plex-line, .sess .t { font-size: 2.6vw; }
+    h2 { font-size: 1.6vw; }
+    .wx-icon, .wx-temp { font-size: 7vw; }
+    .sub, .hours div, .disk .top, .sys { font-size: 2vw; }
+    .hours b { font-size: 2.3vw; }
+    .hours i { font-size: 2.8vw; }
+    .dot { width: 1.4vw; height: 1.4vw; }
+    .foot { font-size: 1.6vw; grid-column: 1 / -1; }
+    #hint { font-size: 1.8vw; }
+  }
+</style>
+</head>
+<body>
+<div id="main">
+  <section>
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date"></div>
+  </section>
+
+  <section>
+    <h2 id="hWeather"></h2>
+    <div class="row">
+      <div class="wx-icon" id="wxIcon">·</div>
+      <div class="wx-temp" id="wxTemp">--°</div>
+      <div>
+        <div class="wx-desc" id="wxDesc"></div>
+        <div class="sub" id="wxFeel"></div>
+      </div>
+    </div>
+    <div class="sub" id="wxDay" style="margin-top:1.2vh"></div>
+    <div class="hours" id="wxHours"></div>
+  </section>
+
+  <section>
+    <h2 id="hPlex">Plex</h2>
+    <div class="plex-line" id="plexLine"></div>
+    <div id="sessions"></div>
+  </section>
+
+  <section>
+    <h2 id="hDisks"></h2>
+    <div id="disks"></div>
+  </section>
+
+  <section>
+    <h2 id="hPhone"></h2>
+    <div class="sys" id="sys"></div>
+  </section>
+
+  <div class="foot" id="foot"></div>
+</div>
+<div id="hint"></div>
+
+<script>
+// ---------------- configuration ----------------
+const LANG = 'en';                       // 'en' or 'pl'
+const CITY = 'Warsaw';                   // shown in the weather header
+const LAT = 52.2297, LON = 21.0122;      // weather location (Open-Meteo, no API key needed)
+const TZ = 'Europe/Warsaw';              // time zone for clock, date and weather
+const DAY_FROM = 6, DAY_TO = 23;         // outside these hours the page is black (night mode)
+const RELOAD_AT = '05:55';               // daily page reload (at night, while the screen is black)
+// -----------------------------------------------
+
+const I18N = {
+  en: {
+    locale: 'en-GB', title: 'Server Status',
+    weather: 'weather', plex: 'Plex', disks: 'Disks', phone: 'Phone',
+    loading: 'loading…', noWeather: 'no weather data',
+    feels: 'feels like', wind: 'wind', hum: 'hum.',
+    today: 'Today', rain: 'rain', sunrise: 'sunrise', sunset: 'sunset',
+    running: 'Running · version', plexDown: 'Plex is not responding',
+    noConn: 'No connection to the status server', nobody: 'Nobody is watching',
+    decision: { directplay: 'original quality', directstream: 'no video transcoding', transcode: 'transcoding' },
+    paused: 'paused', notConnected: 'NOT CONNECTED', freeOf: (f, t) => `${f} GB free of ${t} GB`,
+    freeRam: 'Free RAM', battery: 'Battery', upFor: 'Up for',
+    refreshed: 'Refreshed', lastData: 'Last data from', noData: 'No data',
+    hint: 'Tap the screen to return to full screen',
+    diskNames: {},
+    wmo: {
+      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Rime fog',
+      51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle', 56: 'Freezing drizzle', 57: 'Freezing drizzle',
+      61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain', 67: 'Freezing rain',
+      71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains',
+      80: 'Rain showers', 81: 'Showers', 82: 'Violent showers', 85: 'Snow showers', 86: 'Heavy snow showers',
+      95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with hail',
+    },
+  },
+  pl: {
+    locale: 'pl-PL', title: 'Status serwera',
+    weather: 'pogoda', plex: 'Plex', disks: 'Dyski', phone: 'Telefon',
+    loading: 'wczytuję…', noWeather: 'brak danych o pogodzie',
+    feels: 'odczuwalna', wind: 'wiatr', hum: 'wilg.',
+    today: 'Dziś', rain: 'deszcz', sunrise: 'wschód', sunset: 'zachód',
+    running: 'Działa · wersja', plexDown: 'Plex nie odpowiada',
+    noConn: 'Brak połączenia z serwerem statusu', nobody: 'Nikt teraz nie ogląda',
+    decision: { directplay: 'jakość oryginalna', directstream: 'bez przekodowania obrazu', transcode: 'przekodowanie' },
+    paused: 'pauza', notConnected: 'NIEPODŁĄCZONY', freeOf: (f, t) => `${f} GB wolne z ${t} GB`,
+    freeRam: 'RAM wolny', battery: 'Bateria', upFor: 'Działa od',
+    refreshed: 'Odświeżono', lastData: 'Ostatnie dane z', noData: 'Brak danych',
+    hint: 'Stuknij ekran, aby wrócić do pełnego ekranu',
+    diskNames: { 'Phone storage': 'Pamięć telefonu', 'Media drive': 'Dysk z filmami' },
+    wmo: {
+      0: 'Bezchmurnie', 1: 'Przeważnie pogodnie', 2: 'Częściowe zachmurzenie', 3: 'Pochmurno', 45: 'Mgła', 48: 'Mgła szronowa',
+      51: 'Słaba mżawka', 53: 'Mżawka', 55: 'Gęsta mżawka', 56: 'Marznąca mżawka', 57: 'Marznąca mżawka',
+      61: 'Słaby deszcz', 63: 'Deszcz', 65: 'Ulewa', 66: 'Marznący deszcz', 67: 'Marznący deszcz',
+      71: 'Słaby śnieg', 73: 'Śnieg', 75: 'Intensywny śnieg', 77: 'Ziarnisty śnieg',
+      80: 'Przelotny deszcz', 81: 'Przelotne opady', 82: 'Gwałtowne ulewy', 85: 'Przelotny śnieg', 86: 'Śnieżyca',
+      95: 'Burza', 96: 'Burza z gradem', 99: 'Burza z gradem',
+    },
+  },
+};
+const T = I18N[LANG] || I18N.en;
+const LOCALE = T.locale;
+
+const IS_SERVER = ['127.0.0.1', 'localhost'].includes(location.hostname);
+const APP = window.StatusApp || null;     // the "Server Status" Android app on the phone
+
+const $ = id => document.getElementById(id);
+const fmt = (o) => new Intl.DateTimeFormat(LOCALE, Object.assign({ timeZone: TZ }, o));
+const hm = d => fmt({ hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+const hourNow = () => Number(fmt({ hour: '2-digit', hour12: false }).format(new Date()));
+const isDay = () => { const h = hourNow(); return h >= DAY_FROM && h < DAY_TO; };
+const gb = kb => kb / 1024 / 1024;
+const n0 = v => Math.round(v).toLocaleString(LOCALE);
+const n1 = v => v.toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// --- static texts in the selected language ---
+document.documentElement.lang = LANG;
+document.title = T.title;
+$('hWeather').textContent = `${CITY} · ${T.weather}`;
+$('hPlex').textContent = T.plex;
+$('hDisks').textContent = T.disks;
+$('hPhone').textContent = T.phone;
+$('wxDesc').textContent = T.loading;
+$('hint').textContent = T.hint;
+
+// --- clock, night mode, daily reload ---
+const startedAt = Date.now();
+function tick() {
+  const d = new Date();
+  const s = fmt({ second: '2-digit' }).format(d).padStart(2, '0');
+  $('clock').innerHTML = '<span class="hm">' + hm(d) + '<small>' + s + '</small></span>';
+  $('date').textContent = fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  document.body.classList.toggle('night', !isDay());
+  if (hm(d) === RELOAD_AT && Date.now() - startedAt > 120000) location.reload();
+}
+setInterval(tick, 1000); tick();
+
+// --- shift the content every minute (protects the AMOLED screen from burn-in) ---
+function shift() {
+  const r = () => Math.round(Math.random() * 16 - 8);
+  $('main').style.transform = `translate(${r()}px, ${r()}px)`;
+}
+setInterval(shift, 60 * 1000);
+
+// --- weather (Open-Meteo, no API key) ---
+const WMO_ICONS = {
+  0: ['☀️', '🌙'], 1: ['🌤️', '🌙'], 2: ['⛅', '☁️'], 3: ['☁️'], 45: ['🌫️'], 48: ['🌫️'],
+  51: ['🌦️'], 53: ['🌦️'], 55: ['🌧️'], 56: ['🌧️'], 57: ['🌧️'],
+  61: ['🌦️'], 63: ['🌧️'], 65: ['🌧️'], 66: ['🌧️'], 67: ['🌧️'],
+  71: ['🌨️'], 73: ['🌨️'], 75: ['❄️'], 77: ['🌨️'],
+  80: ['🌦️'], 81: ['🌧️'], 82: ['🌧️'], 85: ['🌨️'], 86: ['❄️'],
+  95: ['⛈️'], 96: ['⛈️'], 99: ['⛈️'],
+};
+const wx = (code, day = 1) => {
+  const icons = WMO_ICONS[code] || ['·'];
+  return { text: T.wmo[code] || '—', icon: (!day && icons[1]) ? icons[1] : icons[0] };
+};
+const hhmm = iso => iso.slice(11, 16);
+
+let wxTimer = null, wxLoaded = false;
+async function loadWeather() {
+  clearTimeout(wxTimer);
+  let ok = false;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
+      '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
+      `&timezone=${encodeURIComponent(TZ)}&forecast_days=2`;
+    const j = await (await fetch(url)).json();
+    const c = j.current, w = wx(c.weather_code, c.is_day);
+    $('wxIcon').textContent = w.icon;
+    $('wxTemp').textContent = Math.round(c.temperature_2m) + '°';
+    $('wxDesc').textContent = w.text;
+    $('wxFeel').innerHTML = `${T.feels} ${Math.round(c.apparent_temperature)}°<br>${T.wind} ${Math.round(c.wind_speed_10m)} km/h · ${T.hum} ${c.relative_humidity_2m}%`;
+    const d = j.daily;
+    $('wxDay').textContent = `${T.today} ${Math.round(d.temperature_2m_min[0])}° / ${Math.round(d.temperature_2m_max[0])}° · ${T.rain} ${d.precipitation_probability_max[0] ?? 0}% · ${T.sunrise} ${hhmm(d.sunrise[0])} · ${T.sunset} ${hhmm(d.sunset[0])}`;
+    const now = c.time.slice(0, 13);
+    let i = j.hourly.time.findIndex(t => t.slice(0, 13) === now);
+    if (i < 0) i = 0;
+    let html = '';
+    for (let k = 1; k <= 5; k++) {
+      const x = i + k * 3; if (x >= j.hourly.time.length) break;
+      const hw = wx(j.hourly.weather_code[x], j.hourly.is_day[x]);
+      html += `<div>${hhmm(j.hourly.time[x])}<i>${hw.icon}</i><b>${Math.round(j.hourly.temperature_2m[x])}°</b>${j.hourly.precipitation_probability[x] ?? 0}%</div>`;
+    }
+    $('wxHours').innerHTML = html;
+    ok = wxLoaded = true;
+  } catch (e) {
+    if (!wxLoaded) $('wxDesc').textContent = T.noWeather;   // keep the old weather if we already had it
+  }
+  // after success refresh in 20 min; after an error (e.g. no internet right after a reboot) retry in 1 min
+  wxTimer = setTimeout(loadWeather, ok ? 20 * 60 * 1000 : 60 * 1000);
+}
+loadWeather();
+window.addEventListener('online', loadWeather);   // internet is back: fetch right away
+
+// --- server status (from /status.json on the phone) ---
+let battery = null, lastOk = 0;
+if (!APP && IS_SERVER && navigator.getBattery) navigator.getBattery().then(b => { battery = b; b.addEventListener('levelchange', loadStatus); b.addEventListener('chargingchange', loadStatus); });
+function readBattery() {
+  if (APP) { try { const b = JSON.parse(APP.battery()); if (b) return { level: b.level / 100, charging: b.charging, temp: b.temp }; } catch (e) {} return null; }
+  return battery;
+}
+
+async function loadStatus() {
+  let s;
+  try {
+    const r = await fetch('status.json?' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    s = await r.json();
+    lastOk = Date.now();
+  } catch (e) {
+    $('plexLine').innerHTML = `<span class="dot off"></span>${T.noConn}`;
+    $('foot').className = 'foot stale';
+    $('foot').textContent = lastOk ? `${T.lastData} ${hm(new Date(lastOk))}` : T.noData;
+    return;
+  }
+
+  const p = s.plex || {};
+  $('plexLine').innerHTML = p.online
+    ? `<span class="dot"></span>${T.running} ${esc((p.version || '').split('.').slice(0, 3).join('.'))}`
+    : `<span class="dot off"></span>${T.plexDown}`;
+
+  const ss = s.sessions || [];
+  $('sessions').innerHTML = !p.online ? '' : ss.length ? ss.map(x => `
+    <div class="sess">
+      <div class="t">▶ <span>${esc(x.user)}</span> · ${esc(x.title)}${x.year ? ' (' + x.year + ')' : ''}</div>
+      <div class="sub">${esc(x.player)} · ${T.decision[x.decision] || ''}${x.state === 'paused' ? ' · ' + T.paused : ''} · ${Math.round(x.progress * 100)}%</div>
+      <div class="bar"><div style="width:${Math.round(x.progress * 100)}%"></div></div>
+    </div>`).join('') : `<div class="sub" style="margin-top:1vh">${T.nobody}</div>`;
+
+  $('disks').innerHTML = (s.disks || []).map(d => {
+    const name = esc(T.diskNames[d.name] || d.name);
+    if (d.missing) {
+      return `<div class="disk"><div class="top"><span>${name}</span><span class="alarm">${T.notConnected}</span></div>
+        <div class="bar"><div class="crit" style="width:100%"></div></div></div>`;
+    }
+    const free = gb(d.free_kb), total = gb(d.total_kb), used = 1 - d.free_kb / d.total_kb;
+    const cls = free < d.crit_gb ? 'crit' : free < d.warn_gb ? 'warn' : 'ok';
+    return `<div class="disk"><div class="top"><span>${name}</span><span>${T.freeOf(n0(free), n0(total))}</span></div>
+      <div class="bar"><div class="${cls}" style="width:${Math.max(2, Math.round(used * 100))}%"></div></div></div>`;
+  }).join('');
+
+  const parts = [];
+  if (s.mem && s.mem.avail_kb) parts.push(`${T.freeRam} <b>${n1(gb(s.mem.avail_kb))} GB</b>`);
+  if (s.cpu_temp_c != null) parts.push(`CPU <b>${s.cpu_temp_c}°C</b>`);
+  const bat = readBattery();
+  if (bat) parts.push(`${T.battery} <b>${Math.round(bat.level * 100)}%</b>${bat.charging ? ' ⚡' : ''}${bat.temp ? ` · <b>${bat.temp}°C</b>` : ''}`);
+  if (s.uptime) parts.push(`${T.upFor} <b>${esc(s.uptime)}</b>`);
+  $('sys').innerHTML = parts.map(x => `<span>${x}</span>`).join('');
+
+  $('foot').className = 'foot';
+  $('foot').textContent = `${T.refreshed} ${hm(new Date())}`;
+}
+loadStatus(); setInterval(loadStatus, 60 * 1000);
+
+// --- screen: keep it on in a browser (at night the page is black, so nothing burns in) ---
+let wakeLock = null;
+async function holdScreen() {
+  if (APP) return;                        // inside the app, Android controls the screen (6:00-23:00)
+  if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) {}
+}
+
+// --- full screen: always as an installed app; in a Chrome tab after a tap ---
+const standalone = () => !!APP || matchMedia('(display-mode: fullscreen)').matches || matchMedia('(display-mode: standalone)').matches;
+function updateHint() {
+  const need = !standalone() && !document.fullscreenElement && !!document.documentElement.requestFullscreen;
+  $('hint').style.display = need ? 'block' : 'none';
+}
+function goFullscreen() {
+  if (!standalone() && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  }
+}
+document.addEventListener('click', () => { goFullscreen(); holdScreen(); });
+document.addEventListener('fullscreenchange', updateHint);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { holdScreen(); loadStatus(); updateHint(); }
+});
+setInterval(() => { holdScreen(); updateHint(); }, 30 * 1000);
+holdScreen(); updateHint();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

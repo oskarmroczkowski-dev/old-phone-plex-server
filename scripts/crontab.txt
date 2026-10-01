@@ -1,0 +1,3 @@
+0 4 * * 0 /data/data/com.termux/files/home/update-server.sh
+*/5 * * * * /data/data/com.termux/files/home/start-server.sh cron
+*/5 * * * * /data/data/com.termux/files/home/status/check-app.sh

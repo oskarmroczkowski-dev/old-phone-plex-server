@@ -1,0 +1,3 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Termux:Boot runs every script in ~/.termux/boot/ after the phone starts.
+~/start-server.sh boot
