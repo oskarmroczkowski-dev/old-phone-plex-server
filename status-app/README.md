@@ -119,6 +119,8 @@ Output: `status-app/server-status.apk`.
 
 ## 5. Install and update
 
+**Ready-made APK:** download `server-status-1.2.apk` from [Releases](https://github.com/oskarmroczkowski-dev/old-phone-plex-server/releases/latest) (signed with this project's release key; check the SHA-256 listed there). Or build your own (section 4); an APK you sign with your own key cannot be installed over the release one, and vice versa, so uninstall first when switching.
+
 ```
 adb mdns services                                      ← wireless debugging port
 adb connect 192.168.1.50:<port>

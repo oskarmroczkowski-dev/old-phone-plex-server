@@ -12,6 +12,11 @@ An old phone from a drawer (realme GT Master Edition: Snapdragon 778G, 8 GB RAM)
 **Total hardware cost: €0.** We only used things we already had. The whole setup draws about **2–3 W**.
 No root, no custom ROM, no unlocked bootloader. Android stays a normal Android, and the server runs inside the Termux app.
 
+<p align="center">
+  <img src="docs/images/status-screen.png" alt="Full-screen status dashboard on the phone: clock, weather, Plex now playing, free disk space, RAM, CPU, battery" width="300"><br>
+  <sub>The phone's full-screen status dashboard (example data). The same page is available to any device on the LAN.</sub>
+</p>
+
 ---
 
 ## Why
@@ -87,7 +92,7 @@ More detail: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 
 1. Follow **[docs/INSTALL-FROM-SCRATCH.md](docs/INSTALL-FROM-SCRATCH.md)**. It is step by step, with the exact commands used.
 2. Set your values at the top of the scripts: `USB_ID` and `MEDIA_DIR` in `scripts/start-server.sh` and `scripts/status-screen/status-server.py`; `CITY`, `LAT`, `LON`, `TZ` and `LANG` in `scripts/status-screen/www/index.html`; your phone IP and user in `scripts/windows/fix-drive-M.cmd`.
-3. Build and install the status app: [status-app/README.md](status-app/README.md).
+3. Install the status app: download the ready-made APK from **[Releases](https://github.com/oskarmroczkowski-dev/old-phone-plex-server/releases/latest)**, or build it yourself: [status-app/README.md](status-app/README.md).
 4. Run the final tests (reboot, kill Plex, kill Termux) listed at the end of the install guide.
 
 ```
