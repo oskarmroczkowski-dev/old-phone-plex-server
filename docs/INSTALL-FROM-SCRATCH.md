@@ -18,7 +18,7 @@ Use it to rebuild after a factory reset, or on another Android phone.
 |---|---|
 | Android SDK platform-tools (`adb`), e.g. `C:\Users\<you>\AppData\Local\Android\Sdk\platform-tools\` | Android 12+ (here: Android 13, realme UI 4.0), **no root** |
 | OpenSSH (built into Windows) and Git Bash | Developer options → **USB debugging** on |
-| Python 3 (helper scripts) | USB drive formatted **exFAT** (this phone does not mount NTFS) + a USB-C hub with **PD pass-through** |
+| Python 3 (helper scripts) | USB drive, preferably **exFAT** (the factory format of most portable SSDs; NTFS probably works too via the system's `ntfs-3g`, but untested and slower) + a USB-C hub with **PD pass-through** |
 | For the status app: JDK 17 + Android SDK (build-tools 36.0.0, platform android-36) | Wi-Fi with a good signal (see section 8) |
 
 ---

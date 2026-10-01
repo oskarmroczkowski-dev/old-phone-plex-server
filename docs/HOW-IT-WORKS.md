@@ -71,8 +71,9 @@ Everything `start-server.sh` (re)starts is logged in `~/watchdog.log`:
 TV (Plex app) ──► 192.168.1.50:32400 (Plex in Ubuntu/PRoot) ──► /media/usb1/... (USB drive over USB 2.0)
 ```
 - **Direct Play (original quality)**: the file is streamed as-is and the phone barely works. TVs should use this.
-- **Transcoding**: software only (no hardware transcoding without root), about one 1080p stream at a time.
-- Limits: the phone's USB 2.0 port reads ~27 MB/s (enough for several streams, even 4K); Wi-Fi depends on the signal.
+- **Transcoding**: software only (no hardware transcoding without root). Measured: **up to three 1080p → 720p streams at once** (1.2–1.5× real time, CPU up to 86 %, max 71 °C). **4K cannot be transcoded** (0.1–0.4×).
+- **4K needs Direct Play.** A 2021 Samsung TV's Plex app accepts HEVC 10-bit up to **80 Mb/s** (40 Mb/s tested: smooth), without Dolby Vision profile 5. Above that the TV itself asks for a transcode and playback fails.
+- Throughput: USB drive → Wi-Fi **25 MB/s ≈ 200 Mb/s** (USB 2.0 port ~27 MB/s); Wi-Fi depends on the signal and on how the phone is placed. Details: [PERFORMANCE.md](PERFORMANCE.md).
 
 ---
 

@@ -72,29 +72,38 @@
   }
 
   @media (orientation: landscape) {
-    #main { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; gap: 4vh 6vw; padding: 5vh 5vw; }
-    .clock { font-size: 15vw; }
-    .clock small { font-size: 5vw; }
-    .date, .wx-desc, .plex-line, .sess .t { font-size: 2.6vw; }
-    h2 { font-size: 1.6vw; }
-    .wx-icon, .wx-temp { font-size: 7vw; }
-    .sub, .hours div, .disk .top, .sys { font-size: 2vw; }
-    .hours b { font-size: 2.3vw; }
-    .hours i { font-size: 2.8vw; }
-    .dot { width: 1.4vw; height: 1.4vw; }
-    .foot { font-size: 1.6vw; grid-column: 1 / -1; }
-    #hint { font-size: 1.8vw; }
+    /* landscape: left column clock + weather, right column Plex + disks + phone; sizes follow screen height (vh) */
+    #main {
+      display: grid; grid-template-columns: 1.05fr 1fr; grid-template-rows: auto auto auto 1fr;
+      grid-template-areas: "clock plex" "wx disk" "wx sys" "wx foot";
+      column-gap: 5vw; row-gap: 3vh; align-content: start;
+      padding: 4vh max(3.5vw, env(safe-area-inset-right)) 3vh max(3.5vw, env(safe-area-inset-left));
+    }
+    .s-clock { grid-area: clock; } .s-wx { grid-area: wx; } .s-plex { grid-area: plex; }
+    .s-disk { grid-area: disk; } .s-sys { grid-area: sys; } .foot { grid-area: foot; align-self: end; }
+    .clock { font-size: 21vh; }
+    .clock small { font-size: 7vh; }
+    .date { font-size: 4.6vh; }
+    h2 { font-size: 2.8vh; margin-bottom: 1vh; }
+    .wx-icon { font-size: 10vh; } .wx-temp { font-size: 11vh; }
+    .wx-desc, .plex-line, .sess .t { font-size: 4vh; }
+    .sub, .sys { font-size: 3.4vh; }
+    .disk .top { font-size: 3.6vh; }
+    .hours div { font-size: 3.1vh; } .hours b { font-size: 3.8vh; } .hours i { font-size: 4.4vh; }
+    .dot { width: 2.4vh; height: 2.4vh; margin-right: 1.2vw; }
+    .foot { font-size: 2.8vh; }
+    #hint { font-size: 3vh; }
   }
 </style>
 </head>
 <body>
 <div id="main">
-  <section>
+  <section class="s-clock">
     <div class="clock" id="clock">--:--</div>
     <div class="date" id="date"></div>
   </section>
 
-  <section>
+  <section class="s-wx">
     <h2 id="hWeather"></h2>
     <div class="row">
       <div class="wx-icon" id="wxIcon">·</div>
@@ -108,18 +117,18 @@
     <div class="hours" id="wxHours"></div>
   </section>
 
-  <section>
+  <section class="s-plex">
     <h2 id="hPlex">Plex</h2>
     <div class="plex-line" id="plexLine"></div>
     <div id="sessions"></div>
   </section>
 
-  <section>
+  <section class="s-disk">
     <h2 id="hDisks"></h2>
     <div id="disks"></div>
   </section>
 
-  <section>
+  <section class="s-sys">
     <h2 id="hPhone"></h2>
     <div class="sys" id="sys"></div>
   </section>

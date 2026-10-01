@@ -19,6 +19,10 @@ Project timeline. Details of each problem: [LESSONS-LEARNED.md](LESSONS-LEARNED.
 - **Wi-Fi finding:** after the reboot the phone did not rejoin Wi-Fi by itself, because a weak 5 GHz signal (~-80 dBm) was filtered out by Android's auto-join.
 - **Dashboard fix:** weather retries every minute after a failure and as soon as the network returns.
 - **Documentation:** how it works, install from scratch, operations, app docs.
+- **Public release** on GitHub (this repository) and the prebuilt app v1.2 in Releases.
+- **Performance tests** ([PERFORMANCE.md](PERFORMANCE.md)): software transcoding up to three 1080p → 720p streams at once; 4K transcoding impossible (0.1–0.4×); 4K HEVC 10-bit Direct Play at 40 Mb/s smooth on a 2021 Samsung TV, whose Plex app caps HEVC at 80 Mb/s; USB drive → Wi-Fi 25 MB/s (~200 Mb/s).
+- **Correction:** the media drive is exFAT from the factory, and NTFS is probably supported too (`ntfs-3g` is in the system). The earlier "no NTFS" note had never been tested.
+- **Dashboard:** new landscape layout (clock and weather left; Plex, disks and phone right; sized by screen height; clears the camera cutout).
 
 ## 2026-09-29 → 2026-09-30: Copying large files
 

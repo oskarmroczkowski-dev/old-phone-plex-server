@@ -52,8 +52,8 @@ Android phone (Android 13)
 ### No-root limitations
 - No systemd, no Docker, no regular firewall (`ufw`/`iptables`).
 - No ports below 1024 (e.g. 80/443/445).
-- **No hardware transcoding** in Plex. TVs should use **Direct Play** (original quality). Software transcoding manages about one 1080p stream.
-- This phone does not mount NTFS drives. Use **exFAT** (or FAT32).
+- **No hardware transcoding** in Plex. TVs should use **Direct Play** (original quality). Software transcoding was measured at up to **three 1080p → 720p streams at once**; **4K cannot be transcoded** ([PERFORMANCE.md](PERFORMANCE.md)).
+- Use **exFAT** (or FAT32) for the media drive; it is the factory format of most portable SSDs and has a native kernel driver. NTFS probably works too: the system ships `ntfs-3g`, `mkntfs` and `ntfsfix`, and the kernel supports `fuseblk`. It is untested on a real NTFS drive and slower.
 - If the battery ever drains to zero, the phone **will not switch on by itself** when power returns. Press the power button once and everything else comes back automatically.
 
 ---
@@ -279,10 +279,10 @@ Normal idle: CPU ~95% idle, CPU 31–43 °C. A "load average" of 6–7 is an And
 | Nothing came back after a reboot | Check the Termux:Boot settings (auto launch, background). Open Termux:Boot once |
 | No Wi-Fi after a reboot | Weak signal: Android auto-join rejects networks below a threshold (`adb shell dumpsys wifi` → "filtered out due to low signal strength"). Tap the network once, then improve the signal / add a 2.4 GHz fallback / use Ethernet |
 | Films "unavailable" in Plex | Drive disconnected or its ID changed: `ls /storage/`. Update `USB_ID` in `start-server.sh` and `status-server.py` |
-| New drive not visible | Probably NTFS. Reformat to **exFAT** (erases data!) |
+| New drive not visible | `adb shell sm list-volumes all` and `adb shell dumpsys mount \| grep fsType`. exFAT/FAT32 always work; NTFS probably does (ntfs-3g) but is untested. As a last resort reformat to **exFAT** (erases data!). Also check the hub's power |
 | Phone battery draining | The USB-C hub must have **PD pass-through** (charger → hub → phone + drive) |
 | An update broke something | `tail -100 ~/update.log`. Plex can be reinstalled from the plex.tv `.deb` (`dpkg -i`) |
-| Buffering on 4K | Weak Wi-Fi. Move the phone closer to the router or use Ethernet through the hub |
+| Buffering on 4K | First check that it is Direct Play: the status screen must say "original quality". If it says "transcoding", the TV cannot play the file natively (e.g. a 2021 Samsung TV accepts HEVC up to 80 Mb/s, no Dolby Vision profile 5, no image-based subtitles), and the phone cannot transcode 4K. If it is Direct Play, the Wi-Fi is weak: move the phone or use Ethernet through the hub |
 | Drive M: disappeared | Run `fix-drive-M.cmd` |
 | Copy to M: stalls / Windows freezes | Don't copy large files through M:. Use `scp` and verify with SHA-256 (section 11) |
 | Dashboard black during the day | The page server is not up yet (the app retries every 10 s) or has died: `~/status/start-status.sh`, log `~/status/server.log` |

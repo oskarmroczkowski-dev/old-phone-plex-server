@@ -88,3 +88,22 @@ Diagnosis was done together with Claude (Claude Code) using Android `dumpsys`/`l
 - **Symptom:** after a normal Windows restart drive M: was gone, although it had been mapped with `net use … /persistent:yes`.
 - **Root cause (likely, not confirmed):** the mapping had been created from a restricted automation shell, and Windows never wrote `HKCU\Network\M`.
 - **Fix:** a one-click `fix-drive-M.cmd` run from the user's own session. It does nothing if M: already works, so it never interrupts a copy.
+
+## 15. 4K plays at 40 Mb/s but not at 100 Mb/s: the TV decides, not the server
+
+- **Symptom:** a 4K HEVC 10-bit test clip at 40 Mb/s played instantly; the same clip at 100 and 150 Mb/s buffered forever.
+- **Evidence:** `/status/sessions` showed Direct Play for 40 Mb/s and a video transcode at 0.1–0.4× for the others. The Plex log showed the request arriving with `directPlay=0` (`MDE: … Direct Play is disabled`). The TV's Plex app had sent a profile limiting HEVC to **80 Mb/s** and excluding **Dolby Vision profile 5**.
+- **Root cause:** the client caps what it will Direct Play. Above the cap it asks for a transcode, and a phone cannot transcode 4K in software.
+- **Fix:** keep 4K files within the TV's limits (bitrate, HDR10 rather than DV profile 5, text subtitles rather than PGS). Throughput from the phone (~200 Mb/s) was never the bottleneck. See [PERFORMANCE.md](PERFORMANCE.md).
+
+## 16. "This phone doesn't support NTFS" was never tested
+
+- **Symptom:** early notes said the phone could not mount NTFS, so drives "must be exFAT".
+- **Evidence:** the drive in use is exFAT from the factory (`dumpsys mount` → `fsType=exfat`, label `PortableSSD`), and it was never reformatted. The system ships `ntfs-3g`, `mkntfs` and `ntfsfix`, and `/proc/filesystems` lists `fuseblk`.
+- **Fix:** documentation corrected: exFAT is recommended (native driver, faster), and NTFS probably works through ntfs-3g but is untested. Lesson: write down what was measured and mark guesses as guesses.
+
+## 17. Benchmarking from inside Termux hides the real CPU load
+
+- **Symptom:** a transcoding benchmark reported 0 % CPU while the transcoder was clearly busy.
+- **Root cause:** on Android 13, Termux (an ordinary app) cannot see other processes' CPU time in `/proc/stat`/`top`. Driving Plex's HLS API from a script was also unreliable: segment timing depends on seeking and throttling, and later sessions returned 404.
+- **Fix:** run the `Plex Transcoder` command from the Plex log directly, time it, and read `/proc/stat` through ADB (`adb shell head -1 /proc/stat`). Temperatures from `/sys/class/thermal` are readable from Termux.

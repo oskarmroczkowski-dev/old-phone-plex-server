@@ -13,8 +13,10 @@ An old phone from a drawer (realme GT Master Edition: Snapdragon 778G, 8 GB RAM)
 No root, no custom ROM, no unlocked bootloader. Android stays a normal Android, and the server runs inside the Termux app.
 
 <p align="center">
-  <img src="docs/images/status-screen.png" alt="Full-screen status dashboard on the phone: clock, weather, Plex now playing, free disk space, RAM, CPU, battery" width="300"><br>
-  <sub>The phone's full-screen status dashboard (example data). The same page is available to any device on the LAN.</sub>
+  <img src="docs/images/status-screen.png" alt="Full-screen status dashboard on the phone in portrait: clock, weather, Plex now playing, free disk space, RAM, CPU, battery" height="420">
+  &nbsp;
+  <img src="docs/images/status-screen-landscape.png" alt="The same status dashboard in landscape: clock and weather on the left, Plex, disks and phone on the right" height="190"><br>
+  <sub>The phone's full-screen status dashboard, portrait and landscape (example data). The same page is available to any device on the LAN.</sub>
 </p>
 
 ---
@@ -44,7 +46,8 @@ No root, no custom ROM, no unlocked bootloader. Android stays a normal Android, 
 - The **same status page for every device on the LAN** (`http://<phone-ip>:8099`). The Plex token never leaves the phone.
 - **LAN-only SSH**, key authentication only, passwords disabled.
 - **Network drive on Windows** (SSHFS-Win) for browsing, and `scp` + SHA-256 for large files.
-- **Direct Play** to TVs: the phone barely works while streaming.
+- **Direct Play** to TVs: the phone barely works while streaming. **4K HEVC Direct Play** tested and working.
+- **Software transcoding when needed**: measured up to **three 1080p → 720p streams at once** in real time.
 
 ---
 
@@ -80,7 +83,7 @@ More detail: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
 | Item | Notes |
 |---|---|
 | An old Android phone | Android 12+, ARM64. Tested on realme GT Master Edition (RMX3363, Android 13, realme UI 4.0, Snapdragon 778G, 8 GB RAM, 256 GB). |
-| A USB drive | **exFAT** (this phone does not mount NTFS). An SSD is quieter and uses less power. |
+| A USB drive | **exFAT** recommended (the factory format of most portable SSDs; native kernel driver). NTFS probably works too, since the phone ships `ntfs-3g`, but it is untested and slower. An SSD is quieter and uses less power. |
 | A USB-C hub with **PD pass-through** | So the phone charges while the drive is connected. |
 | Wi-Fi | A decent signal matters (see [docs/LESSONS-LEARNED.md](docs/LESSONS-LEARNED.md)). Ethernet through the hub is even better. |
 | A Windows PC (for setup) | `adb` (Android platform-tools), OpenSSH, Git Bash, Python 3. To build the status app: JDK 17 and Android SDK (build-tools 36, platform android-36). |
@@ -109,6 +112,7 @@ git clone https://github.com/oskarmroczkowski-dev/old-phone-plex-server.git
 | [docs/INSTALL-FROM-SCRATCH.md](docs/INSTALL-FROM-SCRATCH.md) | Full setup with real commands, from a stock phone to a tested server |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Day-to-day: paths, scripts, commands, Android settings, troubleshooting, security, network drive |
 | [docs/LESSONS-LEARNED.md](docs/LESSONS-LEARNED.md) | Non-obvious problems we hit, how we diagnosed them and what fixed them |
+| [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | Measured transcoding capacity, 4K Direct Play limits, throughput, and how to reproduce the tests |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | Project timeline |
 | [status-app/README.md](status-app/README.md) | The native "Server Status" app: classes, permissions, build without Gradle, install |
 
@@ -143,6 +147,12 @@ lists/removed-apps-realme.txt  bloatware removed with `pm uninstall --user 0`
 | Copying a film with `scp` | ~21 MB/s, verified with SHA-256 |
 | Power | phone ~0.6–0.8 W into the battery (measured via ADB); whole setup estimated at 2–3 W |
 | Idle load | CPU ~95% idle, CPU 31–43 °C, ~3.5 GB RAM available |
+| Software transcoding, 1080p H.264 → 720p | 1 stream **1.29×**, 2 at once **~1.5×** each, 3 at once **1.17–1.26×** each (CPU up to 86 %, max 71 °C) |
+| Software transcoding, 4K HEVC | 0.1–0.4×: **not possible**, 4K needs Direct Play |
+| 4K HEVC 10-bit Direct Play to a 2021 Samsung TV | **40 Mb/s: smooth** (phone at 35–38 °C); the TV's Plex app caps HEVC at 80 Mb/s |
+| USB drive → Wi-Fi → client (the Direct Play path) | **25 MB/s ≈ 200 Mb/s** |
+
+Details and method: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ---
 
@@ -161,7 +171,7 @@ The human set the goals, made the decisions and approved changes; the AI execute
 
 ## Limitations
 
-- **No hardware transcoding** without root. Software transcoding handles about one 1080p stream. Use **Direct Play** (original quality) on TVs.
+- **No hardware transcoding** without root. Software transcoding handles up to three 1080p → 720p streams, but **4K cannot be transcoded**. Use **Direct Play** (original quality) on TVs. For 4K, the TV must play the file natively: watch for the TV app's bitrate cap, Dolby Vision profile 5 and image-based (PGS) subtitles, all of which force a transcode.
 - The phone's **USB-C port is USB 2.0**: ~27 MB/s to the drive. Enough for several streams, slow for bulk copying.
 - **Wi-Fi signal matters**: with a weak signal (≈ -80 dBm on 5 GHz) Android will not auto-reconnect after a reboot. Place the phone well, or use Ethernet through the hub.
 - **No-root constraints**: no systemd, Docker or firewall, and no ports below 1024 (so no SMB share; SSHFS instead).
