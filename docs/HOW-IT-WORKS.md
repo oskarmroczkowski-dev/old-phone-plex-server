@@ -75,7 +75,7 @@ TV (Plex app) ──► 192.168.1.50:32400 (Plex in Ubuntu/PRoot) ──► /med
 ```
 - **Direct Play (original quality)**: the file is streamed as-is and the phone barely works. TVs should use this.
 - **Transcoding**: software only (no hardware transcoding without root). Measured: **up to three 1080p → 720p streams at once** (1.2–1.5× real time, CPU up to 86 %, max 71 °C). **4K cannot be transcoded** (0.1–0.4×).
-- **4K needs Direct Play.** A 2021 Samsung TV plays 4K HEVC 10-bit **HDR10 up to 70 Mb/s** (SDR 40 Mb/s also smooth). Its Plex app declares a cap of 80 Mb/s, but at 80 Mb/s the screen stayed black; above the cap the TV asks for a transcode and playback fails. No Dolby Vision profile 5. A realme Android TV (4K panel) could not start 4K HEVC 10-bit at all, so give it lower-resolution versions.
+- **4K needs Direct Play.** A 2021 Samsung TV plays 4K HEVC 10-bit **HDR10 up to 70 Mb/s** (SDR 40 Mb/s also smooth). Its Plex app declares a cap of 80 Mb/s, but at 80 Mb/s the screen stayed black; above the cap the TV asks for a transcode and playback fails. No Dolby Vision profile 5. A realme Android TV (4K panel) could not start 4K HEVC 10-bit at all, while 1080p plays fine, so give it 1080p versions.
 - Throughput: USB drive → Wi-Fi **25 MB/s ≈ 200 Mb/s** (USB 2.0 port ~27 MB/s); Wi-Fi depends on the signal and on how the phone is placed. Details: [PERFORMANCE.md](PERFORMANCE.md).
 
 ---

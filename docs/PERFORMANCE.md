@@ -44,7 +44,7 @@ Jellyfin 4K HEVC HDR10 clips (~30 s each, plus the SDR 10-bit 40 Mb/s clip), cop
 | 4K **HDR10 90 Mb/s** | ❌ the TV disables Direct Play ("no direct play video profile exists for http/mp4/hevc"); transcode at 0.2–0.3×, phone 53–58 °C | – |
 
 - **Samsung: the practical 4K HDR10 limit is 70 Mb/s.** The 80 Mb/s cap in its profile is nominal: an average of 78.8 Mb/s (with peaks above 80) is accepted but not displayed.
-- **realme:** its Plex app reports a **3840×2160** screen and H.264/HEVC support (`videoResolution=3840x2160` in the Plex log), yet for every 4K HEVC 10-bit clip it only fetched the item details and **never asked the server to play** (no `decision` request, no `/library/parts` request): a spinner forever. An ordinary 480p H.264 film plays by Direct Play. Its player simply cannot handle 4K HEVC 10-bit; 4K H.264 was not tested.
+- **realme:** its Plex app reports a **3840×2160** screen and H.264/HEVC support (`videoResolution=3840x2160` in the Plex log), yet for every 4K HEVC 10-bit clip it only fetched the item details and **never asked the server to play** (no `decision` request, no `/library/parts` request): a spinner forever. Ordinary films play by Direct Play: 480p H.264 in this test, 1080p in the owner's test the day before. Its player simply cannot handle 4K HEVC 10-bit; 4K H.264 was not tested.
 - **Server Direct Play is not proof of a picture.** Always confirm on the TV itself.
 - **Why the phone cannot help by transcoding:** Plex for Linux (inside Ubuntu/PRoot) has no access to the phone's hardware video encoder, so a 4K transcode runs on the CPU at 0.2–0.3× (HDR → SDR tone mapping included). Root would mostly bring a real chroot and a fixed high CPU clock; we estimate that at 10–20 % (not measured), far from the ~4× needed.
 

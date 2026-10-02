@@ -161,7 +161,7 @@ lists/removed-apps-realme.txt  bloatware removed with `pm uninstall --user 0`
 | Software transcoding, 1080p H.264 → 720p | 1 stream **1.29×**, 2 at once **~1.5×** each, 3 at once **1.17–1.26×** each (CPU up to 86 %, max 71 °C) |
 | Software transcoding, 4K HEVC | 0.1–0.4×: **not possible**, 4K needs Direct Play |
 | 4K HEVC 10-bit Direct Play to a 2021 Samsung TV | **HDR10 70 Mb/s and SDR 40 Mb/s: smooth** (phone at 34–38 °C); HDR10 80 Mb/s: black screen; 90 Mb/s: the TV asks for a transcode |
-| 4K HEVC 10-bit on a realme Android TV (Android TV 11, 4K panel) | does **not start** (HDR10 and SDR, 40–70 Mb/s); an ordinary 480p H.264 film plays fine (1080p not tested) |
+| 4K HEVC 10-bit on a realme Android TV (Android TV 11, 4K panel) | does **not start** (HDR10 and SDR, 40–70 Mb/s); 1080p films play fine (owner test on 2026-10-01) |
 | USB drive → Wi-Fi → client (the Direct Play path) | **25 MB/s ≈ 200 Mb/s** |
 | Dashboard animation (Earth 8 fps, stars) | whole phone CPU 15–21 % (6–9 % without it) |
 | Radio: internet cut while playing → back by itself | test (emulator): playing again **6 s** after the network returned |

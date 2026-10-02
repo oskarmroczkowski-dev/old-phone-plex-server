@@ -174,4 +174,4 @@ Diagnosis was done together with Claude (Claude Code) using Android `dumpsys`/`l
 - **Symptom:** a realme Android TV with a 4K panel spun forever on every 4K HEVC 10-bit clip (HDR10 and SDR, 40–70 Mb/s), while normal films played.
 - **Evidence:** the Plex log showed the TV fetching the item details and reporting a 3840×2160 screen, but no playback decision and no file request at all.
 - **Root cause:** the TV's player rejects 4K HEVC 10-bit on its own side before contacting the server; nothing the server or phone could change.
-- **Fix:** give that TV lower-resolution (e.g. 1080p) versions. When a client "hangs" before playback, check whether it requested anything at all before blaming the server.
+- **Fix:** give that TV 1080p versions (1080p plays fine on it). When a client "hangs" before playback, check whether it requested anything at all before blaming the server.
