@@ -1,0 +1,765 @@
+{
+  "_about": "Stations of the radio player in the Status app (Radio card and Radio panel). Fields: url = stream address (MP3/AAC/HLS); alt = backup addresses, tried in order when url does not play; uuid = Radio Browser entry (radio-browser.info): the app asks it for the current address as one more backup (servers de1, nl1, at1); upstream = real stream relayed by status-server.py at /radio-proxy/<id>, used when the WebView does not accept its format (audio/aacp) or the address needs the current time: {now} is replaced with the Unix time (Bauer/Rayo stations, parameter skey); rayo = station code in the Rayo API: the proxy refreshes the address from it once a day and keeps upstream as a backup; logo (optional) = path to a logo image in www/ (not included: station logos are trademarks); group tab = short tab name in the Radio panel. Checked every night by check-stations.py (result: radio-health.json).",
+  "groups": [
+    {
+      "name": "Polish Radio",
+      "tab": "Polish Radio",
+      "stations": [
+        {
+          "id": "jedynka",
+          "name": "Jedynka",
+          "tag": "PR1",
+          "url": "https://stream11.polskieradio.pl/pr1/pr1.sdp/playlist.m3u8"
+        },
+        {
+          "id": "dwojka",
+          "name": "Dwójka",
+          "tag": "PR2",
+          "url": "https://stream12.polskieradio.pl/pr2/pr2.sdp/playlist.m3u8"
+        },
+        {
+          "id": "trojka",
+          "name": "Trójka",
+          "tag": "PR3",
+          "url": "https://stream13.polskieradio.pl/pr3/pr3.sdp/playlist.m3u8"
+        },
+        {
+          "id": "czworka",
+          "name": "Czwórka",
+          "tag": "PR4",
+          "url": "https://stream14.polskieradio.pl/pr4/pr4.sdp/playlist.m3u8"
+        },
+        {
+          "id": "pr24",
+          "name": "Polskie Radio 24",
+          "tag": "news",
+          "url": "https://stream15.polskieradio.pl/pr24/pr24.sdp/playlist.m3u8"
+        }
+      ]
+    },
+    {
+      "name": "Polish commercial",
+      "tab": "Commercial",
+      "stations": [
+        {
+          "id": "rmf",
+          "name": "RMF FM",
+          "tag": "",
+          "url": "http://195.150.20.242:8000/rmf_fm",
+          "uuid": "399b7c2a-6680-11e8-b15b-52543be04c81"
+        },
+        {
+          "id": "zet",
+          "name": "Radio ZET",
+          "tag": "",
+          "url": "http://zet-net-01.cdn.eurozet.pl:8400/",
+          "uuid": "59e30dda-64bf-11ea-be63-52543be04c81"
+        },
+        {
+          "id": "zlote",
+          "name": "Złote Przeboje",
+          "tag": "",
+          "url": "http://radiostream.pl/tuba8928-1.mp3",
+          "uuid": "aea643fa-255a-461d-8a77-d00ddac9036d"
+        },
+        {
+          "id": "antyradio",
+          "name": "Antyradio",
+          "tag": "rock",
+          "url": "https://n-4-2.dcs.redcdn.pl/sc/o2/Eurozet/live/antyradio.livx?audio=5",
+          "uuid": "9617d67b-0601-11e8-ae97-52543be04c81"
+        },
+        {
+          "id": "eska",
+          "name": "Eska",
+          "tag": "hits",
+          "url": "https://waw.ic.smcdn.pl/2380-1.mp3",
+          "uuid": "3d5ae3c4-6d05-415b-a0eb-d21ca56be0ea"
+        }
+      ]
+    },
+    {
+      "name": "Independent and news",
+      "tab": "Independent",
+      "stations": [
+        {
+          "id": "nowyswiat",
+          "name": "Radio Nowy Świat",
+          "tag": "",
+          "url": "https://go-audio.toya.net.pl/63214",
+          "uuid": "90877e51-c905-431d-aad2-cf7bea939a7b"
+        },
+        {
+          "id": "r357",
+          "name": "Radio 357",
+          "tag": "",
+          "url": "https://stream.radio357.pl/",
+          "uuid": "4ef724fd-3151-49d5-93ef-9be908f059bd"
+        },
+        {
+          "id": "tokfm",
+          "name": "TOK FM",
+          "tag": "news",
+          "url": "https://radiostream.pl/tuba10-1.mp3",
+          "uuid": "c7915f33-f401-4ab4-9f49-dcc1cce15ed6"
+        }
+      ]
+    },
+    {
+      "name": "SomaFM: no ads",
+      "tab": "SomaFM",
+      "stations": [
+        {
+          "id": "soma-groovesalad",
+          "name": "Groove Salad",
+          "tag": "chillout",
+          "url": "https://ice1.somafm.com/groovesalad-128-mp3"
+        },
+        {
+          "id": "soma-u80s",
+          "name": "Underground 80s",
+          "tag": "80s",
+          "url": "https://ice1.somafm.com/u80s-128-mp3"
+        },
+        {
+          "id": "soma-lush",
+          "name": "Lush",
+          "tag": "vocals, mellow",
+          "url": "https://ice1.somafm.com/lush-128-mp3"
+        },
+        {
+          "id": "soma-secretagent",
+          "name": "Secret Agent",
+          "tag": "lounge",
+          "url": "https://ice1.somafm.com/secretagent-128-mp3"
+        },
+        {
+          "id": "soma-indiepop",
+          "name": "Indie Pop Rocks",
+          "tag": "indie",
+          "url": "https://ice1.somafm.com/indiepop-128-mp3"
+        },
+        {
+          "id": "soma-sonicuniverse",
+          "name": "Sonic Universe",
+          "tag": "jazz",
+          "url": "https://ice1.somafm.com/sonicuniverse-128-mp3"
+        }
+      ]
+    },
+    {
+      "name": "UK: easy",
+      "tab": "UK easy",
+      "stations": [
+        {
+          "id": "mellowmagic",
+          "name": "Mellow Magic",
+          "tag": "easy listening",
+          "url": "http://127.0.0.1:8099/radio-proxy/mellowmagic",
+          "upstream": "https://stream-mz.hellorayo.co.uk/magicmellow.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mel"
+        },
+        {
+          "id": "magic",
+          "name": "Magic Radio",
+          "tag": "pop, ballads",
+          "url": "http://127.0.0.1:8099/radio-proxy/magic",
+          "upstream": "https://stream.apollo.audio/mag/hi/aac/?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mag"
+        },
+        {
+          "id": "magicsoul",
+          "name": "Magic Soul",
+          "tag": "soul",
+          "url": "http://127.0.0.1:8099/radio-proxy/magicsoul",
+          "upstream": "https://stream-mz.hellorayo.co.uk/magicsoul.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mso"
+        },
+        {
+          "id": "smooth",
+          "name": "Smooth Radio",
+          "tag": "easy listening",
+          "url": "https://media-ssl.musicradio.com/SmoothUKMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/SmoothUKMP3",
+            "https://media-ssl.musicradio.com/SmoothUK"
+          ]
+        },
+        {
+          "id": "smoothchill",
+          "name": "Smooth Chill",
+          "tag": "chillout",
+          "url": "https://media-ssl.musicradio.com/SmoothChillMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/SmoothChillMP3",
+            "https://media-ssl.musicradio.com/SmoothChill"
+          ]
+        },
+        {
+          "id": "smoothrelax",
+          "name": "Smooth Relax",
+          "tag": "mellow",
+          "url": "https://media-ssl.musicradio.com/SmoothRelaxMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/SmoothRelaxMP3",
+            "https://media-ssl.musicradio.com/SmoothRelax"
+          ]
+        },
+        {
+          "id": "smoothcountry",
+          "name": "Smooth Country",
+          "tag": "country",
+          "url": "https://media-ssl.musicradio.com/SmoothCountryMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/SmoothCountryMP3",
+            "https://media-ssl.musicradio.com/SmoothCountry"
+          ]
+        },
+        {
+          "id": "jazzfm",
+          "name": "Jazz FM",
+          "tag": "jazz",
+          "url": "http://127.0.0.1:8099/radio-proxy/jazzfm",
+          "upstream": "https://stream-al.hellorayo.co.uk/jazzhigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "jaz"
+        },
+        {
+          "id": "classicfm",
+          "name": "Classic FM",
+          "tag": "classical",
+          "url": "https://media-ssl.musicradio.com/ClassicFMMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/ClassicFMMP3",
+            "https://media-ssl.musicradio.com/ClassicFM"
+          ]
+        },
+        {
+          "id": "magicclassical",
+          "name": "Magic Classical",
+          "tag": "classical",
+          "url": "http://127.0.0.1:8099/radio-proxy/magicclassical",
+          "upstream": "https://stream-mz.hellorayo.co.uk/scalahigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mrs"
+        },
+        {
+          "id": "magicmusicals",
+          "name": "Magic Musicals",
+          "tag": "musicals",
+          "url": "http://127.0.0.1:8099/radio-proxy/magicmusicals",
+          "upstream": "https://stream-mz.hellorayo.co.uk/magicmusicalshigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mmu"
+        },
+        {
+          "id": "magicxmas",
+          "name": "Magic Christmas",
+          "tag": "Christmas",
+          "url": "http://127.0.0.1:8099/radio-proxy/magicxmas",
+          "upstream": "https://stream-mz.hellorayo.co.uk/magicchristmas.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "mca"
+        }
+      ]
+    },
+    {
+      "name": "UK: decades",
+      "tab": "UK decades",
+      "stations": [
+        {
+          "id": "ghr",
+          "name": "Greatest Hits Radio",
+          "tag": "hits",
+          "url": "http://127.0.0.1:8099/radio-proxy/ghr",
+          "upstream": "https://stream.apollo.audio/gh0/hi/aac/?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "gh0"
+        },
+        {
+          "id": "ghr60",
+          "name": "Greatest Hits 60s",
+          "tag": "60s",
+          "url": "http://127.0.0.1:8099/radio-proxy/ghr60",
+          "upstream": "https://stream-al.hellorayo.co.uk/ghr60s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "g6s"
+        },
+        {
+          "id": "ghr70",
+          "name": "Greatest Hits 70s",
+          "tag": "70s",
+          "url": "http://127.0.0.1:8099/radio-proxy/ghr70",
+          "upstream": "https://stream-al.hellorayo.co.uk/ghr70s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "70s"
+        },
+        {
+          "id": "ghr80",
+          "name": "Greatest Hits 80s",
+          "tag": "80s",
+          "url": "http://127.0.0.1:8099/radio-proxy/ghr80",
+          "upstream": "https://stream-al.hellorayo.co.uk/ghr80s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "80s"
+        },
+        {
+          "id": "abs70",
+          "name": "Absolute 70s",
+          "tag": "70s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs70",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute70shigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab7"
+        },
+        {
+          "id": "abs80",
+          "name": "Absolute 80s",
+          "tag": "80s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs80",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute80shigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab8"
+        },
+        {
+          "id": "abs90",
+          "name": "Absolute 90s",
+          "tag": "90s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs90",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute90shigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab9"
+        },
+        {
+          "id": "heart80",
+          "name": "Heart 80s",
+          "tag": "80s",
+          "url": "https://media-ssl.musicradio.com/Heart80sMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/Heart80sMP3",
+            "https://media-ssl.musicradio.com/Heart80s"
+          ]
+        },
+        {
+          "id": "heart90",
+          "name": "Heart 90s",
+          "tag": "90s",
+          "url": "https://media-ssl.musicradio.com/Heart90sMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/Heart90sMP3",
+            "https://media-ssl.musicradio.com/Heart90s"
+          ]
+        },
+        {
+          "id": "gold",
+          "name": "Gold",
+          "tag": "oldies",
+          "url": "https://media-ssl.musicradio.com/GoldMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/GoldMP3",
+            "https://media-ssl.musicradio.com/Gold"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "UK: hits",
+      "tab": "UK hits",
+      "stations": [
+        {
+          "id": "heart",
+          "name": "Heart",
+          "tag": "pop",
+          "url": "https://media-ssl.musicradio.com/HeartUKMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/HeartUKMP3",
+            "https://media-ssl.musicradio.com/HeartUK"
+          ]
+        },
+        {
+          "id": "heart00",
+          "name": "Heart 00s",
+          "tag": "2000s",
+          "url": "https://media-ssl.musicradio.com/Heart00sMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/Heart00sMP3",
+            "https://media-ssl.musicradio.com/Heart00s"
+          ]
+        },
+        {
+          "id": "heartdance",
+          "name": "Heart Dance",
+          "tag": "dance",
+          "url": "https://media-ssl.musicradio.com/HeartDanceMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/HeartDanceMP3",
+            "https://media-ssl.musicradio.com/HeartDance"
+          ]
+        },
+        {
+          "id": "capital",
+          "name": "Capital",
+          "tag": "hits",
+          "url": "https://media-ssl.musicradio.com/CapitalMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/CapitalMP3",
+            "https://media-ssl.musicradio.com/Capital"
+          ]
+        },
+        {
+          "id": "hits",
+          "name": "Hits Radio",
+          "tag": "hits",
+          "url": "http://127.0.0.1:8099/radio-proxy/hits",
+          "upstream": "https://stream.apollo.audio/hit/hi/aac/?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "hit"
+        },
+        {
+          "id": "hits90",
+          "name": "Hits Radio 90s",
+          "tag": "90s",
+          "url": "http://127.0.0.1:8099/radio-proxy/hits90",
+          "upstream": "https://stream-al.hellorayo.co.uk/hitsradio90s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "h90"
+        },
+        {
+          "id": "hits00",
+          "name": "Hits Radio 00s",
+          "tag": "2000s",
+          "url": "http://127.0.0.1:8099/radio-proxy/hits00",
+          "upstream": "https://stream-al.hellorayo.co.uk/hitsradio00s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "h00"
+        },
+        {
+          "id": "hitschilled",
+          "name": "Hits Radio Chilled",
+          "tag": "chillout",
+          "url": "http://127.0.0.1:8099/radio-proxy/hitschilled",
+          "upstream": "https://stream-mz.hellorayo.co.uk/magicchilled.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "hch"
+        },
+        {
+          "id": "hitspride",
+          "name": "Hits Radio Pride",
+          "tag": "pop",
+          "url": "http://127.0.0.1:8099/radio-proxy/hitspride",
+          "upstream": "https://stream-al.hellorayo.co.uk/hitsradiopride.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "hi4"
+        },
+        {
+          "id": "kiss",
+          "name": "KISS",
+          "tag": "dance, hip-hop",
+          "url": "http://127.0.0.1:8099/radio-proxy/kiss",
+          "upstream": "https://live-bauerkiss.sharp-stream.com/kissnational.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ki1"
+        },
+        {
+          "id": "kisstory",
+          "name": "KISSTORY",
+          "tag": "classic dance",
+          "url": "http://127.0.0.1:8099/radio-proxy/kisstory",
+          "upstream": "https://live-bauerkiss.sharp-stream.com/kisstory.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ki2"
+        },
+        {
+          "id": "kisstoryrnb",
+          "name": "KISSTORY R&B",
+          "tag": "R&B",
+          "url": "http://127.0.0.1:8099/radio-proxy/kisstoryrnb",
+          "upstream": "https://live-bauerkiss.sharp-stream.com/kisstoryrb.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ktb"
+        },
+        {
+          "id": "kissdance",
+          "name": "KISS Dance",
+          "tag": "dance",
+          "url": "http://127.0.0.1:8099/radio-proxy/kissdance",
+          "upstream": "https://live-bauerkiss.sharp-stream.com/kissdance.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ki5"
+        },
+        {
+          "id": "kissxtra",
+          "name": "KISS Xtra",
+          "tag": "R&B, hip-hop",
+          "url": "http://127.0.0.1:8099/radio-proxy/kissxtra",
+          "upstream": "https://live-bauerkiss.sharp-stream.com/kissfresh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ki3"
+        },
+        {
+          "id": "heat",
+          "name": "heat Radio",
+          "tag": "pop",
+          "url": "http://127.0.0.1:8099/radio-proxy/heat",
+          "upstream": "https://stream-al.hellorayo.co.uk/heat.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "htr"
+        },
+        {
+          "id": "coololdskool",
+          "name": "Cool Old Skool",
+          "tag": "old skool",
+          "url": "http://127.0.0.1:8099/radio-proxy/coololdskool",
+          "upstream": "https://stream-mz.hellorayo.co.uk/webcast4high.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "cwf"
+        },
+        {
+          "id": "abs00",
+          "name": "Absolute 00s",
+          "tag": "2000s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs00",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute00shigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab0"
+        },
+        {
+          "id": "abs10",
+          "name": "Absolute 10s",
+          "tag": "2010s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs10",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute10shigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab1"
+        },
+        {
+          "id": "abs20",
+          "name": "Absolute 20s",
+          "tag": "2020s",
+          "url": "http://127.0.0.1:8099/radio-proxy/abs20",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolute20s.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ab2"
+        }
+      ]
+    },
+    {
+      "name": "UK: rock",
+      "tab": "UK rock",
+      "stations": [
+        {
+          "id": "absolute",
+          "name": "Absolute Radio",
+          "tag": "rock",
+          "url": "http://127.0.0.1:8099/radio-proxy/absolute",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absoluteradiohigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "abr"
+        },
+        {
+          "id": "absclassicrock",
+          "name": "Absolute Classic Rock",
+          "tag": "classic rock",
+          "url": "http://127.0.0.1:8099/radio-proxy/absclassicrock",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absoluteclassicrockhigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "abc"
+        },
+        {
+          "id": "abscountry",
+          "name": "Absolute Country",
+          "tag": "country",
+          "url": "http://127.0.0.1:8099/radio-proxy/abscountry",
+          "upstream": "https://stream-ar.hellorayo.co.uk/absolutecountryhigh.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "abk"
+        },
+        {
+          "id": "planetrock",
+          "name": "Planet Rock",
+          "tag": "rock",
+          "url": "http://127.0.0.1:8099/radio-proxy/planetrock",
+          "upstream": "https://stream-mz.hellorayo.co.uk/planetrock.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "pln"
+        },
+        {
+          "id": "kerrang",
+          "name": "Kerrang! Radio",
+          "tag": "rock, metal",
+          "url": "http://127.0.0.1:8099/radio-proxy/kerrang",
+          "upstream": "https://stream-al.hellorayo.co.uk/kerrang.aac?direct=true&aw_0_1st.skey={now}&aw_0_1st.playerid=BMUK_ukrp",
+          "rayo": "ker"
+        },
+        {
+          "id": "radiox",
+          "name": "Radio X",
+          "tag": "alternative rock",
+          "url": "https://media-ssl.musicradio.com/RadioXUKMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/RadioXUKMP3",
+            "https://media-ssl.musicradio.com/RadioXUK"
+          ]
+        },
+        {
+          "id": "radioxclassic",
+          "name": "Radio X Classic Rock",
+          "tag": "classic rock",
+          "url": "https://media-ssl.musicradio.com/RadioXClassicRockMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/RadioXClassicRockMP3",
+            "https://media-ssl.musicradio.com/RadioXClassicRock"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "BBC & LBC",
+      "tab": "BBC",
+      "stations": [
+        {
+          "id": "bbc2",
+          "name": "BBC Radio 2",
+          "tag": "pop, ballads",
+          "url": "http://as-hls-ww-live.akamaized.net/pool_74208725/live/ww/bbc_radio_two/bbc_radio_two.isml/bbc_radio_two-audio%3d96000.norewind.m3u8",
+          "uuid": "3606ef8c-cd58-4440-8c47-dbf1e0cacdac"
+        },
+        {
+          "id": "bbcws",
+          "name": "BBC World Service",
+          "tag": "news",
+          "url": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+          "uuid": "598c4d0e-6b06-43fb-bff4-717c591213a9"
+        },
+        {
+          "id": "lbc",
+          "name": "LBC",
+          "tag": "talk",
+          "url": "https://media-ssl.musicradio.com/LBCUKMP3",
+          "alt": [
+            "https://media-ice.musicradio.com/LBCUKMP3",
+            "https://media-ssl.musicradio.com/LBCUK"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "USA: pop",
+      "tab": "USA pop",
+      "stations": [
+        {
+          "id": "us-power181",
+          "name": "Power 181",
+          "tag": "top 40",
+          "url": "https://listen.181fm.com/181-power_128k.mp3"
+        },
+        {
+          "id": "us-100hitz",
+          "name": "100hitz Top 40",
+          "tag": "top 40",
+          "url": "http://pureplay.cdnstream1.com/6025_128.mp3"
+        },
+        {
+          "id": "us-star90s",
+          "name": "Star 90s",
+          "tag": "90s",
+          "url": "https://listen.181fm.com/181-star90s_128k.mp3"
+        },
+        {
+          "id": "us-awesome80s",
+          "name": "Awesome 80s",
+          "tag": "80s",
+          "url": "https://listen.181fm.com/181-awesome80s_128k.mp3"
+        },
+        {
+          "id": "us-mellowgold",
+          "name": "Mellow Gold",
+          "tag": "mellow 70s-80s",
+          "url": "https://listen.181fm.com/181-mellow_128k.mp3",
+          "uuid": "961df1e3-0601-11e8-ae97-52543be04c81"
+        },
+        {
+          "id": "us-oldies",
+          "name": "181.FM Classic Hits",
+          "tag": "oldies",
+          "url": "https://listen.181fm.com/181-greatoldies_128k.mp3"
+        },
+        {
+          "id": "us-ch109",
+          "name": "Classic Hits 109",
+          "tag": "70s-90s",
+          "url": "https://broadcast.classichits109.com/70s-90s",
+          "uuid": "34135e58-c4b4-4aaa-89b3-c42254ba7307"
+        },
+        {
+          "id": "us-ch109soft",
+          "name": "Soft Rock 109",
+          "tag": "yacht rock",
+          "url": "https://broadcast.classichits109.com/softrock",
+          "uuid": "c4481bd4-0a22-44f5-bec0-1b2556ddbe89"
+        }
+      ]
+    },
+    {
+      "name": "USA: rock",
+      "tab": "USA rock",
+      "stations": [
+        {
+          "id": "us-kexp",
+          "name": "KEXP Seattle",
+          "tag": "indie, alternative",
+          "url": "http://live-mp3-128.kexp.org/kexp128.mp3",
+          "uuid": "6a7508a9-27ab-11e8-91bf-52543be04c81"
+        },
+        {
+          "id": "us-rprock",
+          "name": "Radio Paradise Rock",
+          "tag": "rock, no ads",
+          "url": "http://stream.radioparadise.com/rock-128",
+          "uuid": "993bd810-f8e6-11e9-bbf2-52543be04c81"
+        },
+        {
+          "id": "us-rpmain",
+          "name": "Radio Paradise",
+          "tag": "eclectic",
+          "url": "http://stream.radioparadise.com/mp3-128",
+          "uuid": "6a61dd1f-e8f1-11e9-a96c-52543be04c81"
+        },
+        {
+          "id": "us-eagle",
+          "name": "The Eagle",
+          "tag": "classic rock",
+          "url": "https://listen.181fm.com/181-eagle_128k.mp3"
+        },
+        {
+          "id": "us-rock181",
+          "name": "Rock 181",
+          "tag": "rock",
+          "url": "https://listen.181fm.com/181-rock_128k.mp3",
+          "uuid": "7ae2d6f0-05c3-42c6-9ae6-5c33d052b564"
+        },
+        {
+          "id": "us-buzz",
+          "name": "The Buzz",
+          "tag": "alternative rock",
+          "url": "https://listen.181fm.com/181-buzz_128k.mp3"
+        }
+      ]
+    },
+    {
+      "name": "USA: country",
+      "tab": "USA country",
+      "stations": [
+        {
+          "id": "us-wsm",
+          "name": "WSM 650 Nashville",
+          "tag": "Grand Ole Opry",
+          "url": "http://stream01048.westreamradio.com/wsm-am-mp3",
+          "uuid": "96107c68-0601-11e8-ae97-52543be04c81"
+        },
+        {
+          "id": "us-highway",
+          "name": "Highway 181",
+          "tag": "new country",
+          "url": "https://listen.181fm.com/181-highway_128k.mp3"
+        },
+        {
+          "id": "us-kickin",
+          "name": "Kickin' Country",
+          "tag": "country",
+          "url": "https://listen.181fm.com/181-kickincountry_128k.mp3",
+          "uuid": "d142e976-eb1a-4861-9e00-4d2c9fbd9e32"
+        },
+        {
+          "id": "us-90scountry",
+          "name": "90s Country",
+          "tag": "90s",
+          "url": "https://listen.181fm.com/181-90scountry_128k.mp3"
+        },
+        {
+          "id": "us-80scountry",
+          "name": "80s Country",
+          "tag": "80s",
+          "url": "https://listen.181fm.com/181-80scountry_128k.mp3"
+        },
+        {
+          "id": "us-americas",
+          "name": "America's Country",
+          "tag": "country",
+          "url": "https://ais-sa2.cdnstream1.com/1976_128.mp3",
+          "uuid": "3b92f8c7-deac-4a81-8a9c-3b0f995d73e4"
+        }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,7 @@ public class MainActivity extends Activity {
         Schedule.scheduleNext(this);
         watchdog = new Watchdog(this);
         watchdog.start();
+        ControlServer.ensureStarted(this);   // radio control (port 8098)
         if (checkSelfPermission(Watchdog.RUN_COMMAND_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Watchdog.RUN_COMMAND_PERMISSION}, 1);
         }

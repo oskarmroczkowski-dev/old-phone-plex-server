@@ -97,7 +97,8 @@ Android phone (Android 13)
 | `~/.bashrc` | `~/start-server.sh termux-open` (runs when Termux is opened) |
 | `~/.termux/termux.properties` | contains `allow-external-apps = true` (needed by the status app watchdog) |
 | `~/.ssh/authorized_keys` | the PC's public key |
-| `~/status/` | status page: `status-server.py`, `start-status.sh`, `check-app.sh`, `www/`, `server.log`, `app-heartbeat` |
+| `~/status/` | status page: `status-server.py`, `start-status.sh`, `check-app.sh`, `check-stations.py`, `www/`, `server.log`, `stations.log`, `app-heartbeat` |
+| `~/status/www/` | `index.html`, `earth.json` (Earth outlines), `radio.json` (stations), `radio-health.json` (nightly station check), `logos/` (station logos, your own download), icons |
 | `~/watchdog.log` | everything the watchdogs (re)started |
 | `~/plex.log` | Plex start output |
 | `~/update.log` | updates (last 2000 lines) |
@@ -105,6 +106,7 @@ Android phone (Android 13)
 | `$PREFIX/etc/ssh/sshd_config` | SSH configuration (LAN only, no passwords) |
 | `$PREFIX/var/lib/proot-distro/containers/ubuntu/rootfs` | Ubuntu's whole file system |
 | `/storage/ABCD-1234/Media/` | the USB media drive as seen by Android/Termux |
+| `/storage/EFGH-5678/Kids/` | the optional second drive (`KIDS_USB_ID`, `KIDS_DIR`), `/media/usb2` in Ubuntu |
 
 ### In Ubuntu
 | Path | What |
@@ -162,13 +164,14 @@ Goes to `~/.termux/boot/`. Termux:Boot runs it after every reboot; it calls `~/s
 0 4 * * 0   ~/update-server.sh          # updates, Sunday 04:00
 */5 * * * * ~/start-server.sh cron      # watchdog: SSH, cron, status page, Plex
 */5 * * * * ~/status/check-app.sh       # watchdog for the Server Status app
+30 4 * * *  ~/status/check-stations.py  # radio station check (section 12)
 ```
 
 ### `windows/fix-drive-M.cmd`
 One-click repair of the network drive (section 11). Set `PHONE_IP`, `PHONE_USER`, `SSH_PORT`, `USB_ID`, `MEDIA_DIR`, `MOVIES_DIR` at the top.
 
 ### `status-screen/`
-`status-server.py`, `start-status.sh`, `check-app.sh`, `www/`: the dashboard (section 12) and the app watchdog (section 13).
+`status-server.py`, `start-status.sh`, `check-app.sh`, `check-stations.py`, `www/`: the dashboard and the radio (section 12) and the app watchdog (section 13).
 
 ### `migrate-plex-paths.sql`
 Example of a one-off rewrite of Windows paths in a migrated Plex database to `/media/usb1/Media/...`. Adjust it to your old paths and **run it only once**.
@@ -282,7 +285,7 @@ Normal idle: CPU ~95% idle, CPU 31–43 °C. A "load average" of 6–7 is an And
 | New drive not visible | `adb shell sm list-volumes all` and `adb shell dumpsys mount \| grep fsType`. exFAT/FAT32 always work; NTFS probably does (ntfs-3g) but is untested. As a last resort reformat to **exFAT** (erases data!). Also check the hub's power |
 | Phone battery draining | The USB-C hub must have **PD pass-through** (charger → hub → phone + drive) |
 | An update broke something | `tail -100 ~/update.log`. Plex can be reinstalled from the plex.tv `.deb` (`dpkg -i`) |
-| Buffering on 4K | First check that it is Direct Play: the status screen must say "original quality". If it says "transcoding", the TV cannot play the file natively (e.g. a 2021 Samsung TV accepts HEVC up to 80 Mb/s, no Dolby Vision profile 5, no image-based subtitles), and the phone cannot transcode 4K. If it is Direct Play, the Wi-Fi is weak: move the phone or use Ethernet through the hub |
+| Buffering on 4K | First check that it is Direct Play: the status screen must say "original quality". If it says "transcoding", the TV cannot play the file natively (e.g. a 2021 Samsung TV declares HEVC up to 80 Mb/s but in practice plays 4K HDR10 up to 70 Mb/s; no Dolby Vision profile 5, no image-based subtitles), and the phone cannot transcode 4K. If it is Direct Play, the Wi-Fi is weak: move the phone or use Ethernet through the hub |
 | Drive M: disappeared | Run `fix-drive-M.cmd` |
 | Copy to M: stalls / Windows freezes | Don't copy large files through M:. Use `scp` and verify with SHA-256 (section 11) |
 | Dashboard black during the day | The page server is not up yet (the app retries every 10 s) or has died: `~/status/start-status.sh`, log `~/status/server.log` |
@@ -356,14 +359,16 @@ Send films fast to a staging folder in Termux's internal storage (PC done in ~2 
 
 ## 12. Status dashboard
 
-Full screen on the phone: **clock and date, weather** (now + every 3 h), **Plex** (running? who watches what, quality, progress), **free space** (phone storage and media drive, with warning colours), **RAM, CPU temperature, battery, uptime**.
+Full screen on the phone: **clock and date** (with the current zodiac constellation), **weather** (now, pressure with its trend, every 3 h), **Plex** (running? what each user in `PLEX_USERS` is watching), **radio** (buttons and the 3 most-played stations) and a table: **free RAM, CPU load and temperature, battery, free space on every drive** (rings). A spinning Earth and twinkling stars in the background (landscape only).
 
 ```
 Termux: status-server.py (port 8099)
   ├── /            → the page (~/status/www/index.html)
-  ├── /status.json → live data: Plex (127.0.0.1:32400, token read locally), drives (statvfs),
-  │                  RAM (/proc/meminfo), CPU (/sys/class/thermal), uptime
-  └── /ping        → "ok"; with ?app=1 it also touches ~/status/app-heartbeat
+  ├── /status.json → live data: Plex (127.0.0.1:32400, token read locally), drives (statvfs; extra USB drives
+  │                  from /proc/mounts), RAM (/proc/meminfo), CPU temperature (/sys/class/thermal), CPU load
+  │                  (per-core idle times), uptime
+  ├── /ping        → "ok"; with ?app=1 it also touches ~/status/app-heartbeat
+  └── /radio-proxy/<id> → relays a station's "upstream" stream (see "Radio" below)
 "Server Status" app (pl.serwerplex.status)
   └── full-screen WebView → http://127.0.0.1:8099/
 The page → weather from Open-Meteo (no key), clock from the phone
@@ -381,8 +386,9 @@ The page → weather from Open-Meteo (no key), clock from the phone
 | AMOLED protection | dark UI, content shifted a few pixels every minute, screen off at night |
 | Other devices | same page at `http://192.168.1.50:8099` (without the phone battery, which only the app provides) |
 
-Configuration at the top of `www/index.html`: `LANG` (`'en'` or `'pl'`), `CITY`, `LAT`, `LON`, `TZ`, `DAY_FROM`, `DAY_TO`.
-Colour thresholds: phone storage yellow < 60 GB, red < 40 GB; media drive yellow < 100 GB, red < 50 GB; unmounted drive → red "NOT CONNECTED".
+Configuration at the top of `www/index.html`: `LANG` (`'en'` or `'pl'`), `CITY`, `LAT`, `LON`, `TZ`, `PLEX_USERS` (the fixed user lines in the Plex card) and the others listed there. Drives in `status-server.py`: `USB_ID`, `MEDIA_DIR`, `KIDS_USB_ID`.
+Drive rings: copper, yellow at the warning threshold, red at the alarm threshold. Phone storage 60/40 GB, media drive 100/50 GB, second drive 50/20 GB, other USB drives 10/5 GB; unmounted media drive → empty ring, red "!" and "NOT CONNECTED".
+Look: black background, smoky grey cards, a copper weather card in a gold frame, copper icons, round copper buttons. The Moon's orbit line is hidden by default (`GLOBE.orbitLine`): on a phone screen the orbit is wider than the gap between the cards.
 
 ### Common tasks
 **Change the page** (no app rebuild): edit `www/index.html`, then
@@ -393,6 +399,58 @@ adb shell am force-stop pl.serwerplex.status; adb shell am start -n pl.serwerple
 (or wait for the 05:55 reload).
 
 **Page server state** (SSH): `pgrep -fa "^python.*status-server"`, `curl -s http://127.0.0.1:8099/status.json`, `cat ~/status/server.log`.
+
+**Restart the page server** (after uploading a new `status-server.py`), over SSH:
+```
+pkill -f "python.*status-serve[r][.]py"; ~/status/start-status.sh
+```
+The bracket pattern matters: a plain `pkill -f status-server.py` also kills your own SSH session when the file name appears anywhere in the same command line.
+
+**Line endings:** files for the phone must use LF. A script saved with CRLF on Windows fails in Termux with `bad interpreter: …python^M` (fix: `sed -i 's/\r$//' file`).
+
+**Preview changes in the Android emulator** (without touching the phone): `python tools/dev-server.py` serves the page from the repository on `127.0.0.1:8099` with live data from the phone. Emulator (AVD) set up like the phone: `adb reverse tcp:8099 tcp:8099`, `adb shell wm size 1080x2400`, `adb shell wm density 480`, **`adb shell settings put system font_scale 1.0`** (the emulator default 1.25 makes every text 25 % bigger and fakes clipping that the phone never has), and the app installed in the emulator. Radio stations behind the proxy play through the phone's proxy.
+
+### Radio
+
+The phone plays internet radio through its speaker or a paired Bluetooth speaker (Android routes the sound by itself).
+
+**On the dashboard** ("radio card"): what is playing, round buttons **▶/■** (starts the last station), **−/+**, **☾ sleep** (taps cycle 15 → 30 → 60 → 90 min → off; a badge shows the minutes left) and the **3 most-played stations** (listening time is counted in the app's `localStorage`). Tapping the card's header ("all ›") opens the **Radio panel**:
+- left, fixed: "Now playing" with the station logo and a glow in its colour, round − ▶/■ + (10–16 mm on the phone), a 10-step volume bar, sleep timer 15 min / 30 min / 1 h / 1.5 h / off;
+- right: one scrollable list of all stations with sticky group tabs (tap a tab to jump to the group; scrolling highlights the current one). A station that failed the nightly check is greyed out with ⚠ (you can still try it); one playing from a backup address has a dot;
+- the panel closes itself after 30 s without a touch (screen protection).
+- **From other devices**: the same page `http://192.168.1.50:8099`. The phone plays, you control it from the sofa.
+- At 23:00 the radio stops (with the screen). Turned on at night, it sets a 1-hour sleep timer. A Bluetooth speaker disconnecting stops the radio.
+
+**Stations** (`~/status/www/radio.json`, 90 in 12 groups): Polish public and commercial radio, SomaFM, **UK** (relax, decades, hits, rock, BBC) and **USA** (pop, rock, country). Fields:
+
+| Field | Meaning |
+|---|---|
+| `id`, `name`, `tag` | identifier, name, short description under the name |
+| `url` | stream address (MP3/AAC/HLS). For a proxied station: `http://127.0.0.1:8099/radio-proxy/<id>` |
+| `alt` | backup addresses, tried in order when `url` does not play |
+| `uuid` | the station in Radio Browser (radio-browser.info): the app fetches the current address from there as one more backup |
+| `upstream` | the real stream relayed by `/radio-proxy/<id>`; `{now}` is replaced by the current Unix time |
+| `rayo` | Bauer/Rayo station code: the proxy takes the current address from the Rayo API (cached for a day, refreshed at once when it fails) |
+| `logo` | `logos/<file>`; optional (logos are trademarks and not in this repository) |
+| `tab` (group) | short name of the group's tab |
+
+Adding a station = edit `radio.json` and `scp` it to the phone; no app rebuild. Find addresses in Radio Browser. `tools/stations-uk.py` and `tools/stations-usa.py` rebuild the UK/US groups (and download logos for your own use). **Bauer/Rayo** streams (Magic, Absolute, Greatest Hits, Hits Radio, KISS, Jazz FM, Planet Rock…) play from outside the UK, but only with `aw_0_1st.skey` = the current time; without it the server answers HTTP 500 (it looks like a geoblock, but it is not). **Global** (Smooth, Heart, Capital, Classic FM, Gold, Radio X, LBC): fixed MP3 addresses on `media-ssl.musicradio.com`, backups on `media-ice` and the AAC version. Skipped on purpose: iHeart stations (addresses with expiring tokens).
+
+**Failsafes** (app 1.3.3):
+
+| Situation | What happens |
+|---|---|
+| Stream dropped, error, buffering > 20 s | reconnect every 5 s, 6 times, moving through the addresses: `url` → `alt` → Radio Browser |
+| After 6 tries **there is no internet** | "no internet, waiting for the network": waits without a limit and resumes a few seconds after the network returns (system callback + a check every minute). Stop, the sleep timer or 23:00 end the wait |
+| After 6 tries the internet works but **the station is silent** | "station not responding, retrying in …": 30 s, 1, 2, 5 × 5 min (~30 min), re-reading the addresses each time; then "⚠ error" |
+| A Bauer station **changed its address** | the proxy takes the current one from the Rayo API; `upstream` is the last resort |
+| A station died for good | the **nightly check** (`check-stations.py`, 04:30, ~15 s) greys it out in the panel and logs it in `~/status/stations.log`; `radio.json` is never changed automatically |
+
+**Diagnostics:**
+- `curl http://192.168.1.50:8098/radio/state` (from the PC): state, station, volume, output (`speaker` / `bt:Name` / `wired`); `info` tells what the failsafe is doing.
+- `adb logcat -s StatusRadio StatusControl`.
+- Station states: `cat ~/status/stations.log` or `http://192.168.1.50:8099/radio-health.json`; check now: `~/status/check-stations.py`.
+- A stream address: `curl -s -m 5 -o /dev/null -w "%{http_code} %{content_type} %{size_download}\n" <url>`. If the type is `audio/aacp` or something odd, put the station behind the proxy (`upstream`).
 
 **Remove the dashboard permanently:** first delete the `check-app.sh` line from `crontab -e` (otherwise Termux keeps reopening the app), then uninstall the app and remove the `~/status/start-status.sh` line from `~/start-server.sh`.
 
@@ -412,6 +470,8 @@ The parts watch each other. Every restart is logged in `~/watchdog.log`.
 | **All of Termux** (swiped away, force-stopped) | the app: pings the page every minute; after 3 failures it runs `start-server.sh status-app` through Termux's `RUN_COMMAND` (at most once per 10 min) | ≤ 3–4 min | ✅ force-stopped → SSH, cron, page and Plex back after 2 min 44 s |
 | **The Server Status app** (closed, force-stopped) | `check-app.sh` from cron: in daytime, if the app has not sent a heartbeat for 15 min, reopens it (at most every 15 min). Never at night, so the screen stays dark | ≤ 20 min | ✅ reopened, its 06:00/23:00 alarm re-created |
 | "Close all" in recent apps | the lock on Termux and the app: nothing closes | – | ✅ |
+| **Internet lost while the radio plays** | the app (1.3.3): after 6 quick tries it waits for the network and resumes the station | seconds after the network returns | ✅ (emulator, 2026-10-02): playing again after 6 s |
+| **A radio station changed its address or stopped** | backups (`alt`, Radio Browser), current Bauer addresses from the Rayo API, the nightly check shows dead stations | at once / by morning | ✅ (2026-10-02, proxy with a deliberately broken address) |
 | Sunday update stops Plex | `~/.update-in-progress` lock: the watchdog waits (lock expires after 2 h in case the script dies) | – | logic checked |
 
 **What the watchdogs cannot fix:** Termux and the app dying at the same time (reboot helps), a Plex process that is alive but hung (`pkill -f "[P]lex Media Server"`, the watchdog restarts it), a fully drained battery (power on by hand) and an unmounted USB drive (the dashboard shows "NOT CONNECTED").
@@ -428,3 +488,6 @@ The parts watch each other. Every restart is logged in `~/watchdog.log`.
 - [ ] "Update Plex" button on the dashboard (check plex.tv for a newer version, update on tap from the phone only).
 - [ ] Optional: Tautulli for watch history and notifications.
 - [ ] Turn off USB debugging when no changes are planned.
+- [ ] Measure the CPU cost of the open Radio panel while the radio plays (equaliser and pulsing ring; the panel closes after 30 s, so it should be small).
+- [ ] Radio: other BBC stations (Radio 1, 4 and 6 Music live on other servers than Radio 2) and local Bauer stations (they work like the national ones).
+- [ ] Remote control of the radio from a real phone app, also from outside the home (e.g. through Tailscale); port 8098 has no password today.

@@ -7,6 +7,8 @@
 # --- configuration ---
 USB_ID="ABCD-1234"   # your USB drive ID, see: ls /storage
 MEDIA_DIR="Media"    # top folder on the drive (contains Movies/ and TV Shows/)
+KIDS_USB_ID=""       # optional second drive (e.g. a kids library), mounted in Ubuntu as /media/usb2; "" = none
+KIDS_DIR="Kids"      # top folder on the second drive
 # ---------------------
 
 WHO="${1:-manual}"
@@ -36,8 +38,14 @@ if [ -n "$(find ~/.update-in-progress -mmin -120 2>/dev/null)" ]; then exit 0; f
 if ! pgrep -f "[P]lex Media Server" >/dev/null && ! pgrep -f "[/]root/start-plex[.]sh" >/dev/null; then
   # wait up to 60 s for the USB drive
   for i in $(seq 1 30); do [ -d "/storage/$USB_ID/$MEDIA_DIR" ] && break; sleep 2; done
-  log "starting Plex"
-  nohup proot-distro login ubuntu --bind "/storage/$USB_ID:/media/usb1" -- /root/start-plex.sh > ~/plex.log 2>&1 &
+  # optional second drive as /media/usb2 if it is mounted; wait up to 20 s for it
+  USB2=()
+  if [ -n "$KIDS_USB_ID" ]; then
+    for i in $(seq 1 10); do [ -d "/storage/$KIDS_USB_ID/$KIDS_DIR" ] && break; sleep 2; done
+    [ -d "/storage/$KIDS_USB_ID/$KIDS_DIR" ] && USB2=(--bind "/storage/$KIDS_USB_ID:/media/usb2")
+  fi
+  log "starting Plex${USB2:+ (with the second drive)}"
+  nohup proot-distro login ubuntu --bind "/storage/$USB_ID:/media/usb1" "${USB2[@]}" -- /root/start-plex.sh > ~/plex.log 2>&1 &
 fi
 
 tail -n 500 ~/watchdog.log > ~/watchdog.log.tmp 2>/dev/null && mv ~/watchdog.log.tmp ~/watchdog.log

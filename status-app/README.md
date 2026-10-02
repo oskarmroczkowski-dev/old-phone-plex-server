@@ -5,9 +5,10 @@ A small **native Android app** (Java, no external libraries, no Gradle) that run
 - keeps the screen **on 06:00–23:00**, lets it turn off at night and **turns it back on at 06:00**,
 - **starts by itself after a reboot**,
 - **guards Termux**: if the status page does not answer for 3 minutes, it asks Termux to run `~/start-server.sh`,
-- gives the page **battery** data (level, charging, temperature).
+- gives the page **battery** data (level, charging, temperature),
+- plays **internet radio** controlled from the status page, also from other devices at home (HTTP control on port 8098), with a **failsafe** for lost internet and changed station addresses.
 
-Version **1.2** (versionCode 3). APK size ~21 KB. Android 11+ (minSdk 30), targetSdk 33.
+Version **1.3.3** (versionCode 7). APK size ~29 KB. Android 11+ (minSdk 30), targetSdk 33.
 
 It is not a Bubblewrap/TWA wrapper and does not use Chrome or Google's servers. The content (HTML) is rendered by the system WebView, while full screen, screen control, alarms, start-up and the watchdog are native code.
 
@@ -28,7 +29,11 @@ status-app/
 │   ├── AlarmReceiver.java     alarm: at 06:00 turns the screen on and shows the dashboard; sets the next alarm
 │   ├── BootReceiver.java      after boot / app update: alarm + dashboard
 │   ├── Bridge.java            window.StatusApp.battery() for the page
-│   └── Watchdog.java          Termux watchdog (/ping?app=1 every minute, RUN_COMMAND)
+│   ├── Watchdog.java          Termux watchdog (/ping?app=1 every minute, RUN_COMMAND)
+│   ├── RadioPlayer.java       radio: HLS → native MediaPlayer, other streams → hidden WebView with <audio>;
+│   │                          sleep timer, 23:00 stop, Bluetooth disconnect stop; failsafe (backup addresses,
+│   │                          waiting for the network, slow retries)
+│   └── ControlServer.java     HTTP server on :8098 (whole home network) to control the radio, with a CORS header
 ├── keystore/                  created by build.sh: status.jks + password.txt (gitignored, KEEP IT SAFE)
 └── server-status.apk          build output (gitignored)
 ```
@@ -38,7 +43,7 @@ status-app/
 ## 2. How it works (class by class)
 
 ### MainActivity
-- **`onCreate`**: the window also uses the display cutout (`LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`), has a black background and creates the WebView. It sets the alarm (`Schedule.scheduleNext`), starts the `Watchdog` and asks for `com.termux.permission.RUN_COMMAND` (a one-time "Allow" dialog).
+- **`onCreate`**: the window also uses the display cutout (`LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`), has a black background and creates the WebView. It sets the alarm (`Schedule.scheduleNext`), starts the `Watchdog` and the radio `ControlServer`, and asks for `com.termux.permission.RUN_COMMAND` (a one-time "Allow" dialog).
 - **WebView**: JavaScript and `localStorage` on, zoom off, long press does nothing (no context menu), no scrollbars. `Bridge` is exposed to JS as `window.StatusApp`.
 - **Load error** (`onReceivedError` / `onReceivedHttpError` for the main frame): shows a black page and retries every **10 s**. This happens right after a reboot, before `status-server.py` is up.
 - **Renderer crash** (`onRenderProcessGone`): the WebView is recreated and the app keeps running.
@@ -54,7 +59,7 @@ status-app/
 
 ### AlarmReceiver
 - Always schedules the next alarm.
-- At 06:00 it takes a 15 s `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` (turns the screen on) and brings the dashboard to the front. At 23:00 nothing else is needed: once `FLAG_KEEP_SCREEN_ON` is cleared the screen turns off by itself.
+- At 06:00 it takes a 15 s `SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP` (turns the screen on) and brings the dashboard to the front. At 23:00 it stops the radio if it is playing; the screen turns off by itself once `FLAG_KEEP_SCREEN_ON` is cleared.
 
 ### BootReceiver
 - Handles `BOOT_COMPLETED` (phone start) and `MY_PACKAGE_REPLACED` (app update): sets the alarm and opens the dashboard.
@@ -76,13 +81,34 @@ status-app/
   It is sent with `startForegroundService`, at most once every **10 min**. Log entry in `~/watchdog.log`: `[status-app] …`; logcat tag `StatusWatchdog`.
 - Requires `allow-external-apps = true` in `~/.termux/termux.properties`, the runtime permission `com.termux.permission.RUN_COMMAND`, and `<queries><package android:name="com.termux"/></queries>` in the manifest (package visibility on Android 11+).
 
+### ControlServer (port 8098)
+- A plain `ServerSocket` on all interfaces (home network, no password, like the status page). Each request runs on its own thread.
+- `GET /radio/state`, `/radio/play?id=<station id>`, `/radio/stop`, `/radio/volume?v=0..100`, `/radio/sleep?min=0..` (0 = no sleep timer). Every answer is the radio state as JSON: `state` (`stopped` / `connecting` / `playing` / `error`), `id`, `name`, `info` (what the failsafe is doing), `sleepUntil`, `volume`, `output` (`speaker` / `wired` / `bt:<name>`).
+- `Access-Control-Allow-Origin: *`, so the page on port 8099 (on the phone or any other device) can call it.
+
+### RadioPlayer
+- Station list: `http://127.0.0.1:8099/radio.json`, re-read on every start; a copy is kept in the app's storage for when the page server is down.
+- **Two engines**: HLS (`.m3u8`) plays in the native `MediaPlayer`; plain Icecast MP3/AAC plays in a hidden WebView with `<audio>`, because realme's native player never finishes preparing endless streams. Chromium does not accept `audio/aacp`, so such stations go through the page server's `/radio-proxy/<id>` (see the radio section of the docs).
+- Wi-Fi lock and partial wake lock while playing, so it keeps playing with the screen off.
+- Stops on: the sleep timer, 23:00 (`AlarmReceiver`), a Bluetooth speaker disconnecting (`ACTION_AUDIO_BECOMING_NOISY`), another app taking the audio. Started at night, it sets a 1 h sleep timer by itself.
+- **Failsafe** (1.3.3):
+
+| Situation | What happens |
+|---|---|
+| Stream broke, error, buffering > 20 s | reconnect every 5 s, 6 attempts; each attempt takes the next address: `url` → `alt` (backup list in `radio.json`) → the current address from Radio Browser by `uuid` (servers `de1`, `nl1`, `at1` in turn) |
+| After 6 attempts, **no internet** | `info` = "no internet, waiting for network": waits with no limit (`ConnectivityManager.NetworkCallback` + a check every minute) and resumes by itself a few seconds after the network returns. Ends with Stop, the sleep timer or 23:00 |
+| After 6 attempts, internet works but the **station does not answer** | "station not responding, retrying in …": attempts after 30 s, 1, 2 and 5 × 5 min (about 30 min), each time with freshly read addresses; then `error` |
+
+  Tested in the emulator: network cut while playing → "no internet, waiting for network" → playing again 6 s after the network returned.
+
 ---
 
 ## 3. Permissions and settings (and why)
 
 | Permission / setting | Why | How it is granted |
 |---|---|---|
-| `INTERNET` | WebView (page and weather), Watchdog | automatic |
+| `INTERNET` | WebView (page and weather), Watchdog, radio | automatic |
+| `ACCESS_NETWORK_STATE` (1.3.3) | radio: is there internet, and a signal when the network returns | automatic |
 | `usesCleartextTraffic="true"` | the page is plain `http://` on localhost | manifest |
 | `WAKE_LOCK` | turning the screen on at 06:00 | automatic |
 | `RECEIVE_BOOT_COMPLETED` | start after reboot | automatic |
@@ -119,7 +145,7 @@ Output: `status-app/server-status.apk`.
 
 ## 5. Install and update
 
-**Ready-made APK:** download `server-status-1.2.apk` from [Releases](https://github.com/oskarmroczkowski-dev/old-phone-plex-server/releases/latest) (signed with this project's release key; check the SHA-256 listed there). Or build your own (section 4); an APK you sign with your own key cannot be installed over the release one, and vice versa, so uninstall first when switching.
+**Ready-made APK:** download `server-status-1.3.3.apk` from [Releases](https://github.com/oskarmroczkowski-dev/old-phone-plex-server/releases/latest) (signed with this project's release key; check the SHA-256 listed there). Or build your own (section 4); an APK you sign with your own key cannot be installed over the release one, and vice versa, so uninstall first when switching.
 
 ```
 adb mdns services                                      ← wireless debugging port
@@ -152,6 +178,8 @@ Behaviour: `/status.json` every minute, weather every 20 min (every minute after
 | `adb shell dumpsys package pl.serwerplex.status \| grep -E "versionName\|granted"` | version and permissions |
 | `adb shell appops get pl.serwerplex.status SYSTEM_ALERT_WINDOW` | "display over other apps" (`allow`) |
 | `adb logcat -s StatusWatchdog` | the Termux watchdog |
+| `adb logcat -s StatusRadio StatusControl` | the radio and its control server |
+| `curl http://192.168.1.50:8098/radio/state` (from the PC) | radio state; `info` shows what the failsafe is doing |
 | `cat ~/watchdog.log` (Termux) | `[status-app] …` and `[cron] … Status app …` entries |
 | `ls -la ~/status/app-heartbeat` (Termux) | the app's last heartbeat |
 | `adb shell am force-stop pl.serwerplex.status; adb shell am start -n pl.serwerplex.status/.MainActivity` | restart the app (the alarm is re-created) |
@@ -165,5 +193,9 @@ Behaviour: `/status.json` every minute, weather every 20 min (every minute after
 | 1.0 (1) | 2026-10-01 | first: full screen, WebView, 06–23 screen control, alarm, start after boot, battery for the page |
 | 1.1 (2) | 2026-10-01 | `setAlarmClock` instead of `setExactAndAllowWhileIdle` (realme applied a window of up to 1 h) |
 | 1.2 (3) | 2026-10-01 | `Watchdog`: heartbeat `/ping?app=1` and reviving Termux through `RUN_COMMAND`; `RUN_COMMAND` permission, `<queries>` |
+| 1.3 (4) | 2026-10-01 | radio: `RadioPlayer` (MediaPlayer, sleep timer, 23:00 stop, Bluetooth disconnect → stop, Wi-Fi lock), `ControlServer` (:8098) |
+| 1.3.1 (5) | 2026-10-01 | second engine: plain streams (Icecast MP3/AAC) through a hidden WebView, because realme's MediaPlayer never finishes preparing them |
+| 1.3.2 (6) | 2026-10-01 | playback number in the WebView engine's events: an error while stopping the previous station no longer counts as an error of the new one |
+| 1.3.3 (7) | 2026-10-02 | radio failsafe: address list `url` → `alt` (new `radio.json` field) → Radio Browser by `uuid` (servers `de1`, `nl1`, `at1`); after 6 quick attempts without internet it waits for the network and resumes by itself; with a working network, slow retries 30 s…5 min for about 30 min with freshly read addresses. New permission `ACCESS_NETWORK_STATE` |
 
 Rejected earlier attempt: installing the page as a web app from Chrome ("Install"). Chrome 154 creates real installed web apps (WebAPKs) only through Google's servers, which cannot reach a page on the phone's `127.0.0.1`. The result was a plain shortcut that opens a tab with the address bar.

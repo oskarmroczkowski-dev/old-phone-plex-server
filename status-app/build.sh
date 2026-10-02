@@ -7,8 +7,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION_CODE=3
-VERSION_NAME=1.2
+VERSION_CODE=7
+VERSION_NAME=1.3.3
 SDK="${ANDROID_SDK:-$(cygpath -u "$LOCALAPPDATA")/Android/Sdk}"
 BT="$SDK/build-tools/36.0.0"
 PLAT="$SDK/platforms/android-36/android.jar"

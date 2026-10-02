@@ -14,3 +14,10 @@ __pycache__/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Radio station logos are trademarks: downloaded locally by tools/stations-*.py, never committed
+scripts/status-screen/www/logos/
+# generated on the phone by check-stations.py
+scripts/status-screen/www/radio-health.json
+# Natural Earth source for tools/make_earth.py (large, download it yourself)
+tools/land-50m.json

@@ -31,6 +31,23 @@ Free test clips from the Jellyfin project (4K HEVC 10-bit, SDR, 29 s, [CC BY-SA 
 
 **Why:** the TV's Plex app sends a client profile to the server. For HEVC it declared: up to 4096×2160, 10-bit, 60 fps, **max 80 Mb/s**, HDR10 allowed, **no Dolby Vision profile 5**. Above those limits the TV itself disables Direct Play, and the Plex log shows `MDE: … Direct Play is disabled`. Image-based subtitles (PGS) also force a transcode. Other TVs have other limits; check the `add-limitation(...)` entries in the Plex log after starting playback.
 
+## 4K HDR10 and a second TV (2026-10-02)
+
+Jellyfin 4K HEVC HDR10 clips (~30 s each, plus the SDR 10-bit 40 Mb/s clip), copied to the drive with a checksum check, played with quality set to Original. "On screen" is what a person saw; the decision and bitrate come from the server (`/status/sessions` every 3 s and the Plex log).
+
+| Clip | 2021 Samsung TV (Tizen) | realme Smart TV (Android TV 11, 4K panel) |
+|---|---|---|
+| 4K HEVC 10-bit **SDR 40 Mb/s** | ✅ smooth (2026-10-01) | ❌ does not start |
+| 4K **HDR10 40 Mb/s** | – | ❌ does not start |
+| 4K **HDR10 70 Mb/s** | ✅ **Direct Play, picture OK** (68.9 Mb/s, phone 34–36 °C) | ❌ does not start |
+| 4K **HDR10 80 Mb/s** | ❌ **black screen** with a moving progress bar, although the server reports Direct Play (78.8 Mb/s) | – |
+| 4K **HDR10 90 Mb/s** | ❌ the TV disables Direct Play ("no direct play video profile exists for http/mp4/hevc"); transcode at 0.2–0.3×, phone 53–58 °C | – |
+
+- **Samsung: the practical 4K HDR10 limit is 70 Mb/s.** The 80 Mb/s cap in its profile is nominal: an average of 78.8 Mb/s (with peaks above 80) is accepted but not displayed.
+- **realme:** its Plex app reports a **3840×2160** screen and H.264/HEVC support (`videoResolution=3840x2160` in the Plex log), yet for every 4K HEVC 10-bit clip it only fetched the item details and **never asked the server to play** (no `decision` request, no `/library/parts` request): a spinner forever. An ordinary 480p H.264 film plays by Direct Play. Its player simply cannot handle 4K HEVC 10-bit; 4K H.264 was not tested.
+- **Server Direct Play is not proof of a picture.** Always confirm on the TV itself.
+- **Why the phone cannot help by transcoding:** Plex for Linux (inside Ubuntu/PRoot) has no access to the phone's hardware video encoder, so a 4K transcode runs on the CPU at 0.2–0.3× (HDR → SDR tone mapping included). Root would mostly bring a real chroot and a fixed high CPU clock; we estimate that at 10–20 % (not measured), far from the ~4× needed.
+
 The phone itself was not the bottleneck.
 
 ## Throughput
@@ -42,7 +59,27 @@ The phone itself was not the bottleneck.
 | Phone internal storage → USB drive (`cp`) | 20–23 MB/s |
 | Phone USB 2.0 port → USB drive (read) | ~27 MB/s |
 
-200 Mb/s covers 4K up to the TV's 80 Mb/s cap, and two TVs at typical 4K bitrates (15–40 Mb/s).
+200 Mb/s covers 4K up to the Samsung's practical 70 Mb/s HDR10 limit, and two TVs at typical 4K bitrates (15–40 Mb/s).
+
+## Status dashboard animation
+
+Measured on the phone through ADB (`top`) on 2026-10-01, landscape layout, daytime:
+
+| Version | Whole phone CPU |
+|---|---|
+| Dashboard without the background animation | 6–9 % |
+| First version with the spinning Earth | ~21 % |
+| After optimising (own timer instead of `requestAnimationFrame`, 8 fps, static layers drawn once, lighter outlines, canvases at 2× instead of 3×) | **15–21 %**; app process ~34 % of one core + page renderer ~23 %; CPU 33–45 °C |
+
+The phone's display refreshes at 120 Hz, and `requestAnimationFrame` woke the renderer on every refresh; the own timer runs the Earth at 8 fps and the stars and zodiac sign at 4 fps. Everything stops at night and in portrait. To save more, lower `GLOBE.fps` in `index.html` from 8 to 6.
+
+## Radio
+
+| What | Result (2026-10-02) |
+|---|---|
+| Stations streaming from the phone (nightly `check-stations.py`, all 90) | all playing; the check takes ~15 s (6 in parallel) |
+| Internet cut while playing (emulator, Wi-Fi and data off) | waits; playing again **6 s** after the network returned |
+| Typical stream bitrate | 48 kb/s AAC+ (Bauer) to 128 kb/s MP3 (Global, 181.FM, Radio Paradise): negligible next to Plex |
 
 ## How to reproduce
 

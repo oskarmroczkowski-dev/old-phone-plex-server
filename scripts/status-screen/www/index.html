@@ -27,14 +27,31 @@
   }
   #main > * { flex-shrink: 0; }
   body.night #main, body.night #hint { display: none; }
+  /* stars over the whole background and the rotating Earth in the middle of the screen (~4 x 4 cm on the phone) */
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  body.night #sky { display: none; }
+  #globe { position: fixed; left: 50%; top: 50%; width: 214px; height: 214px; transform: translate(-50%, -50%);
+    z-index: 0; pointer-events: none; transition: transform 2s ease; }
+  #main { position: relative; z-index: 1; }
+  .s-clock { position: relative; }
+  #zodiac { display: none; }
+  body.night #globe { display: none; }
+  @media (orientation: portrait) { #globe { display: none; } }      /* portrait: the cards fill the whole screen */
 
   .clock { font-size: 22vw; font-weight: 200; line-height: .95; letter-spacing: -.02em; font-variant-numeric: tabular-nums; text-align: center; }
   .clock .hm { position: relative; display: inline-block; }
-  .clock small { position: absolute; left: 100%; bottom: .1em; font-size: 7vw; color: var(--muted); margin-left: 1.5vw; }
+  /* seconds on the same line as the time, so the whole "17:10 44" group is centred above the date */
+  .clock small { font-size: 7vw; color: var(--muted); margin-left: 1.5vw; }
   .date { font-size: 5vw; color: var(--muted); margin-top: .8vh; text-align: center; }
   .date::first-letter { text-transform: uppercase; }
 
   h2 { font-size: 3.2vw; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 1vh; }
+  .s-wx h2 { text-align: center; }
+  .s-wx .city { font-size: calc(3.2vw + 2pt); margin-bottom: .3vh; }      /* city name above the weather description */
+  .s-wx .row > div:last-child { flex: 1; text-align: center; }      /* description and "feels like" centred in the free space */
+  .hpa { color: #fff; font-weight: 500; }      /* pressure highlighted (useful for migraine-prone people) */
+  #wxDay, #wxMore { white-space: nowrap; overflow: hidden; }
+  #wxMore { text-align: center; }      /* one line; fitLine() adjusts the font size */
   .row { display: flex; align-items: center; gap: 3.5vw; }
   .wx-icon { font-size: 11vw; line-height: 1; filter: saturate(.7) brightness(.85); }
   .wx-temp { font-size: 12vw; font-weight: 200; line-height: 1; }
@@ -48,6 +65,17 @@
   .dot { display: inline-block; width: 2.6vw; height: 2.6vw; border-radius: 50%; background: var(--ok); margin-right: 2vw; vertical-align: middle; }
   .dot.off { background: var(--crit); }
   .plex-line { font-size: 4.4vw; }
+  .plex-head { display: flex; align-items: center; gap: 3vw; }      /* PLEX heading and status on one line */
+  .plex-head h2 { margin-bottom: 0; }
+  /* "● Running · version" in the same font, size and colour as the PLEX heading */
+  .plex-head .plex-line { font-size: 3.2vw; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .plex-head .dot { width: 1.8vw; height: 1.8vw; margin-right: 1.5vw; }
+  /* fixed user lines: the card always has the same height, an empty line = nothing playing */
+  .users { margin-top: .8vh; }
+  .user { display: flex; align-items: baseline; gap: 2.5vw; font-size: 4.2vw; line-height: 1.4; white-space: nowrap; }
+  .user .n { flex: none; min-width: 22vw; color: var(--plex); }
+  .user .a { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
   .sess { margin-top: 1.1vh; }
   .sess .t { font-size: 4.4vw; line-height: 1.3; }
   .sess .t span { color: var(--plex); }
@@ -66,83 +94,390 @@
   .sys b { color: var(--fg); font-weight: 400; }
   .foot { font-size: 3vw; color: #4d525a; }
   .foot.stale { color: var(--crit); }
+  .foot:empty { display: none; }
 
   #hint {
     display: none; position: fixed; left: 0; right: 0; bottom: 3vh; text-align: center; font-size: 3.6vw; color: var(--muted);
   }
 
+
+  /* radio */
+  .radio-line { display: flex; align-items: center; justify-content: space-between; gap: 3vw; font-size: 4.2vw; }
+  .radio-line .st.off { color: var(--muted); }
+  .btn { display: inline-block; padding: 1vh 3.5vw; border: 1px solid #3a3f46; border-radius: 3vw; color: var(--fg); background: #0b0c0e; font-size: 3.8vw; white-space: nowrap; }
+  #radioPanel { display: none; position: fixed; inset: 0; z-index: 10; background: #000; overflow-y: auto; padding: 4vh 6vw; }
+  #radioPanel.open { display: block; }
+  body.night #radioPanel { display: none; }
+  .rp-head { display: flex; justify-content: space-between; align-items: center; }
+  .rp-title { font-size: 6vw; }
+  .rp-now { font-size: 4.4vw; margin: 1.6vh 0; min-height: 3em; }
+  .rp-row { display: flex; flex-wrap: wrap; gap: 2vw; margin: 1.2vh 0; align-items: center; }
+  .rp-group { font-size: 3.2vw; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 2.4vh 0 1vh; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vw; }
+  .tile { border: 1px solid #2f343a; border-radius: 3vw; padding: 2vh 1.5vw; text-align: center; background: #0b0c0e; }
+  .tile b { display: block; font-size: 3.9vw; font-weight: 500; color: var(--fg); }
+  .tile span { font-size: 2.9vw; color: var(--muted); }
+  .tile.on { border-color: var(--plex); }
+  .tile.on b { color: var(--plex); }
+  /* columns: transparent in portrait (sections one below another), two independent columns in landscape */
+  .col { display: contents; }
+  /* info block: equal columns, icon + value */
+  .info .tr { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }      /* equal columns in each row separately */
+  .info .c { padding: .9vh .5vw; border-top: 1px solid var(--faint); border-left: 1px solid var(--faint); white-space: nowrap; text-align: center; overflow: hidden; }
+  .info .c:first-child { border-left: 0; }
+  .info .k { display: block; font-size: 2.0vw; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: .3vh; }
+  .info .v { font-size: 3.3vw; font-variant-numeric: tabular-nums; }
+  .info .v b { font-weight: 400; color: var(--fg); }
+  .info .v i { font-style: normal; color: var(--muted); }
+  .info .v b.warn { color: var(--warn); }
+  .info .v b.crit { color: var(--crit); }
+  .tile .logo { height: 10vw; display: flex; align-items: center; justify-content: center; margin-bottom: 1vh;
+    background: #e6e6e6; border-radius: 2vw; padding: .5vh 1.5vw; filter: brightness(.85); }
+  .tile .logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .mini { height: 1.5em; vertical-align: middle; margin-right: .5em; border-radius: .3em; background: #e6e6e6;
+    padding: .1em .3em; filter: brightness(.75); }
+
   @media (orientation: landscape) {
-    /* landscape: left column clock + weather, right column Plex + disks + phone; sizes follow screen height (vh) */
+    /* landscape: left column clock + weather, right column Plex + radio + info; sizes from screen height (vh) */
     #main {
-      display: grid; grid-template-columns: 1.05fr 1fr; grid-template-rows: auto auto auto 1fr;
-      grid-template-areas: "clock plex" "wx disk" "wx sys" "wx foot";
-      column-gap: 5vw; row-gap: 3vh; align-content: start;
+      display: grid; grid-template-columns: 1.05fr 1fr; column-gap: 5vw;
       padding: 4vh max(3.5vw, env(safe-area-inset-right)) 3vh max(3.5vw, env(safe-area-inset-left));
     }
-    .s-clock { grid-area: clock; } .s-wx { grid-area: wx; } .s-plex { grid-area: plex; }
-    .s-disk { grid-area: disk; } .s-sys { grid-area: sys; } .foot { grid-area: foot; align-self: end; }
+    .col { display: flex; flex-direction: column; gap: 3vh; min-height: 0; overflow: hidden; }
+    .col-l { justify-content: space-between; }
+    .col-r .s-info { margin-top: auto; }      /* the info table is the last block of the right column */
+    #zodiac { display: block; position: absolute; left: 0; top: 0; width: 100px; height: 100px; pointer-events: none; }      /* zodiac sign left of the clock */
+    .s-clock .clock, .s-clock .date { position: relative; left: 54px; }      /* clock and date ~1 cm to the right: room for the zodiac sign */
+    .info .c { padding: .8vh .8vw; } .info .k { font-size: 2.0vh; } .info .v { font-size: 3.1vh; }
     .clock { font-size: 21vh; }
     .clock small { font-size: 7vh; }
     .date { font-size: 4.6vh; }
     h2 { font-size: 2.8vh; margin-bottom: 1vh; }
+    .s-wx .city { font-size: calc(2.8vh + 2pt); margin-bottom: .3vh; }
     .wx-icon { font-size: 10vh; } .wx-temp { font-size: 11vh; }
     .wx-desc, .plex-line, .sess .t { font-size: 4vh; }
     .sub, .sys { font-size: 3.4vh; }
     .disk .top { font-size: 3.6vh; }
     .hours div { font-size: 3.1vh; } .hours b { font-size: 3.8vh; } .hours i { font-size: 4.4vh; }
     .dot { width: 2.4vh; height: 2.4vh; margin-right: 1.2vw; }
+    .plex-head .plex-line { font-size: 2.8vh; }
+    .plex-head .dot { width: 1.6vh; height: 1.6vh; margin-right: .8vw; }
+    .user { font-size: 3.6vh; gap: 1.5vw; } .user .n { min-width: 9vw; }
     .foot { font-size: 2.8vh; }
     #hint { font-size: 3vh; }
+    .radio-line { font-size: 3.8vh; }
+    .btn { font-size: 3.4vh; padding: 1vh 1.6vw; border-radius: 2vh; }
+    #radioPanel { padding: 4vh max(3.5vw, env(safe-area-inset-left)); }
+    .rp-title { font-size: 5vh; } .rp-now { font-size: 3.8vh; } .rp-group { font-size: 2.8vh; }
+    .tiles { grid-template-columns: repeat(6, 1fr); gap: 1.2vw; }
+    .tile { border-radius: 2vh; padding: 1.6vh 1vw; } .tile .logo { height: 8vh; border-radius: 1.4vh; } .tile b { font-size: 3.4vh; } .tile span { font-size: 2.6vh; }
   }
+
+  /* Radio card: status, buttons (play/stop, quieter, louder, sleep timer) and the 3 most played stations */
+  .radio-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .radio-head h2 { margin-bottom: .6vh; }
+  .radio-all { font-size: 3vw; color: var(--muted); }
+  .radio-now { display: flex; align-items: center; justify-content: space-between; gap: 2vw; font-size: 4.2vw; white-space: nowrap; }
+  .radio-now .st { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .radio-now .st.off { color: var(--muted); }
+  .radio-vol { color: var(--muted); font-size: 3.4vw; font-variant-numeric: tabular-nums; }
+  .radio-ctl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 1.2vh 0 8px; }
+  .rbtn { display: flex; align-items: center; justify-content: center; gap: 3px; height: 46px; padding: 0; font-size: 13px; border-radius: 12px; }
+  .rbtn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .rbtn svg .f { fill: currentColor; stroke: none; }
+  .rbtn i { font-style: normal; font-variant-numeric: tabular-nums; }
+  /* 3 most played stations: tiles with logo (if any) and name */
+  .radio-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .rtop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 52px; min-width: 0;
+    border: 1px solid rgba(255, 255, 255, .16); border-radius: 12px; background: rgba(255, 255, 255, .04); }
+  .rtop img { height: 24px; max-width: 90%; object-fit: contain; border-radius: 4px; background: #e6e6e6; padding: 1px 3px; filter: brightness(.8); }
+  .rtop span { max-width: 92%; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rtop.on { border-color: var(--plex); }
+  .rtop.on span { color: var(--plex); }
+  @media (orientation: landscape) {
+    .col-r .s-radio { width: 236px; align-self: flex-end; }      /* landscape: narrower card at the right edge */
+    .radio-all { font-size: 2.4vh; }
+    .radio-now { font-size: 3.4vh; gap: .8vw; } .radio-vol { font-size: 2.8vh; }
+    .radio-ctl { gap: 6px; margin: 1vh 0 6px; }
+    .rbtn { height: 44px; border-radius: 11px; }
+    .radio-top { gap: 6px; }
+    .rtop { height: 46px; border-radius: 11px; }
+    .rtop img { height: 20px; }
+    .rtop span { font-size: 10px; }
+    #globe { left: calc(50% + 70px); }      /* Earth ~1.3 cm to the right, into the free space next to the Radio card */
+  }
+
+  /* ===== look: black background, smoked grey cards, copper weather card in a gold frame, copper icons ===== */
+  :root { --fg: #f1f1f1; --muted: #a9a49d; --faint: rgba(255, 255, 255, .14); }
+  .clock { font-weight: 500; color: #fff; }
+  .clock small { font-weight: 400; color: #9b9b9b; }
+  .date { color: #b5b5b5; }
+
+  /* Plex, Radio and info cards: smoked glass with a thin light edge (no backdrop blur: it gave a dark band on black) */
+  .s-plex, .s-radio, .s-info {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .045));
+    border: 1px solid rgba(255, 255, 255, .17);
+    border-radius: 3vw; padding: 1.4vh 3.5vw;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
+  }
+  /* weather card: copper panel in a gold frame (light gold top left, old gold bottom right) */
+  .s-wx {
+    background: linear-gradient(160deg, rgba(150, 96, 56, .62) 0%, rgba(100, 64, 37, .62) 45%, rgba(48, 32, 19, .75) 100%);
+    position: relative; border-radius: 3vw; padding: 1.4vh 3.5vw;
+    box-shadow: 0 0 2.6vh rgba(212, 175, 55, .28), inset 0 1px 0 rgba(255, 222, 185, .28);
+  }
+  .s-wx > * { position: relative; z-index: 1; }
+  .s-wx::before {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; z-index: 2;
+    background: linear-gradient(135deg, #fff1c1 0%, #e6c467 18%, #c9a032 42%, #8f6b1a 72%, #5e440e 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+  .s-wx h2 { color: #efe0cf; }
+  .s-wx .sub, .s-wx .hours div { color: #e6d7c7; }
+  .s-wx .hours { border-top-color: rgba(255, 225, 190, .28); }
+
+  /* copper pill button */
+  .btn { background: linear-gradient(180deg, #8c5f37, #5b3c22); border: 1px solid rgba(232, 172, 112, .6); color: #fbeadb;
+         box-shadow: 0 .4vh 1.2vh rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 222, 185, .35); }
+
+  /* info table: icons instead of labels (the label stays in the markup with zero size) */
+  .info .tr:first-child .c { border-top: 0; }
+  .info .k { color: #bdb6ad; font-size: 0; letter-spacing: 0; }
+  .info .v b { color: #fff; }
+  .info .k::before { display: block; background: center / contain no-repeat; }
+  /* top row: icon above the value */
+  .info .c-ram .k::before, .info .c-load .k::before, .info .c-cpu .k::before, .info .c-bat .k::before {
+    content: ''; width: 3.2vh; height: 3.2vh; margin: 0 auto .4vh;
+  }
+  /* bottom row (drives): icon on the left, data on the same line */
+  .info .tr:nth-child(2) .c { display: flex; align-items: center; justify-content: center; gap: 1.6vw; }
+  .info .tr:nth-child(2) .k { margin: 0; }
+  .info .c-phone .k::before, .info .c-hdd .k::before, .info .c-usb .k::before { content: ''; width: 2.8vh; height: 2.8vh; margin: 0; }
+  .info .c-ram .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round'><rect x='2' y='7' width='20' height='9' rx='1'/><rect x='5.5' y='9.5' width='3' height='4'/><rect x='10.5' y='9.5' width='3' height='4'/><rect x='15.5' y='9.5' width='3' height='4'/><path d='M5 16v2.5M9 16v2.5M15 16v2.5M19 16v2.5'/></svg>"); }
+  .info .c-load .k::before, .info .c-cpu .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round'><rect x='6' y='6' width='12' height='12' rx='1.5'/><rect x='9.5' y='9.5' width='5' height='5'/><path d='M9.5 2.5v3.5M14.5 2.5v3.5M9.5 18v3.5M14.5 18v3.5M2.5 9.5h3.5M2.5 14.5h3.5M18 9.5h3.5M18 14.5h3.5'/></svg>"); }
+  .info .c-bat.chg .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round'><rect x='2' y='7' width='18' height='10' rx='2'/><path d='M22 10.5v3'/><path d='M12.2 8.2l-3.4 4.3h3l-1 3.3 3.6-4.6h-3.1z' fill='%23d0945f' stroke='none'/></svg>") !important; }
+  .info .c-bat .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round'><rect x='2' y='7' width='18' height='10' rx='2'/><path d='M22 10.5v3'/><rect x='4.5' y='9.5' width='13' height='5' rx='.5' fill='%23d0945f' stroke='none'/></svg>"); }
+  .info .c-phone .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><rect x='6.5' y='2.5' width='11' height='19' rx='2.2'/><path d='M10.5 18.5h3'/></svg>"); }
+  .info .c-hdd .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><rect x='3.5' y='2.5' width='17' height='19' rx='2.2'/><circle cx='12' cy='10.5' r='4.8'/><circle cx='12' cy='10.5' r='1.1' fill='%23d0945f' stroke='none'/><path d='M7 18.5h3.5'/></svg>"); }
+  .info .c-usb .k::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><rect x='7' y='9' width='10' height='12.5' rx='1.6'/><path d='M9 9V3.5h6V9'/><path d='M11 5.8h.01M13 5.8h.01'/></svg>"); }
+
+  @media (orientation: landscape) {
+    .s-wx, .s-plex, .s-radio, .s-info { border-radius: 2vh; padding: 1.4vh 1.6vw; }
+    .info .c-ram .k::before, .info .c-load .k::before, .info .c-cpu .k::before, .info .c-bat .k::before { width: 5.4vh; height: 5.4vh; }
+    .info .tr:nth-child(2) .c { gap: .8vw; }
+    .info .c-phone .k::before, .info .c-hdd .k::before, .info .c-usb .k::before { width: 4.4vh; height: 4.4vh; }
+  }
+
+  /* drives as rings: arc = free space, percentage of free space inside, free GB and a short name next to it */
+  .info .tr.dk-row .c { padding: .6vh .4vw; }
+  .info .dk .tx { display: flex; flex-direction: column; align-items: flex-start; gap: .1vh; }
+  .info .dk .ln { display: flex; align-items: center; gap: .7vw; }
+  .info .dk .nm { padding-left: .2vw; font-size: 1.7vh; letter-spacing: .14em; text-transform: uppercase; color: #bdb6ad; }
+  .info .dk .ring { position: relative; width: 6.8vh; height: 6.8vh; flex: none; }
+  .info .dk .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .info .dk .ring .tk { stroke: rgba(255, 255, 255, .12); }
+  .info .dk .ring .ar { stroke: #d0945f; filter: drop-shadow(0 0 .6vh rgba(208, 148, 95, .55)); }
+  .info .dk .ring .ar.warn { stroke: var(--warn); filter: drop-shadow(0 0 .6vh rgba(201, 162, 39, .55)); }
+  .info .dk .ring .ar.crit { stroke: var(--crit); filter: drop-shadow(0 0 .6vh rgba(204, 85, 64, .6)); }
+  .info .dk .ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                         font-size: 2.2vh; color: #fff; font-variant-numeric: tabular-nums; }
+  .info .dk .ring span.crit { color: var(--crit); font-size: 3.4vh; }
+  .info .dk .dl { display: flex; align-items: center; gap: .5vw; }
+  .info .dk .dl .k::before { width: 2.8vh !important; height: 2.8vh !important; }
+  .info .dk .dl .v { font-size: 3.1vh; }
+  /* portrait: the screen is tall, so size the disk rings from the width instead of the height */
+  @media (orientation: portrait) {
+    .info .tr.dk-row .c { padding: .6vh .3vw; }
+    .info .dk .ln { gap: 1.2vw; }
+    .info .dk .ring { width: 8.6vw; height: 8.6vw; }
+    .info .dk .ring span { font-size: 2.3vw; }
+    .info .dk .dl { gap: .8vw; }
+    .info .dk .dl .k::before { width: 3.2vw !important; height: 3.2vw !important; }
+    .info .dk .dl .v { font-size: 3.6vw; }
+    .info .dk .nm { font-size: 2.2vw; }
+  }
+  .info .c-film .k::before { content: ''; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><rect x='3' y='4' width='18' height='16' rx='1.6'/><path d='M7 4v16M17 4v16M3 8h4M3 12h4M3 16h4M17 8h4M17 12h4M17 16h4'/></svg>"); }
+  .info .c-kids .k::before { content: ''; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0945f' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'><circle cx='6.5' cy='7' r='2.6'/><circle cx='17.5' cy='7' r='2.6'/><circle cx='12' cy='13.5' r='7'/><ellipse cx='12' cy='16' rx='2.6' ry='2'/><path d='M9.4 11.5h.01M14.6 11.5h.01'/></svg>"); }
+
+
+
+
+  /* Radio panel: left column "Now playing", right column all stations in one scrolling list with sticky group tabs.
+     Finger-sized buttons for adults: 56-84 px = 10-16 mm on the phone (1 CSS px = ~0.19 mm), gaps >= 6 px. */
+  #radioPanel { --glow: 208, 148, 95; background: radial-gradient(110% 95% at 17% 45%, rgba(var(--glow), .17), transparent 62%) #000; }
+  .rp-side { display: flex; flex-direction: column; align-items: center; }
+  .rp-hero { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+  .rp-logo { width: 170px; height: 68px; padding: 8px 14px; border-radius: 18px; background: #e6e6e6;
+             display: flex; align-items: center; justify-content: center; font-size: 40px;
+             box-shadow: 0 0 34px rgba(var(--glow), .55), 0 0 80px rgba(var(--glow), .22); }
+  .rp-logo img { max-width: 100%; max-height: 100%; object-fit: contain; filter: brightness(.9); }
+  .rp-name { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 4.2vh; color: #fff; }
+  #radioPanel .rp-now { margin: 2px 0 0; min-height: 0; font-size: 2.7vh; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .eq { display: none; height: 2.2vh; gap: 3px; align-items: flex-end; }
+  #radioPanel.playing .eq { display: inline-flex; }
+  .eq i { width: 4px; height: 100%; border-radius: 2px; background: var(--plex); transform-origin: bottom; animation: eq 1.1s ease-in-out infinite; }
+  .eq i:nth-child(2) { animation-delay: -.35s; } .eq i:nth-child(3) { animation-delay: -.7s; } .eq i:nth-child(4) { animation-delay: -.2s; }
+  @keyframes eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+
+  /* round "physical" buttons: convex copper, pressed in when touched */
+  .rb { position: relative; width: 64px; height: 64px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+        color: #fbeadb; border: 1px solid rgba(232, 172, 112, .55);
+        background: radial-gradient(circle at 35% 28%, #b27c4b 0%, #7a4f2c 48%, #472d18 100%);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 222, 185, .45), inset 0 -4px 8px rgba(0, 0, 0, .35);
+        transition: transform .08s, box-shadow .08s; }
+  .rb:active { transform: scale(.93); box-shadow: 0 2px 4px rgba(0, 0, 0, .5), inset 0 4px 10px rgba(0, 0, 0, .55); }
+  .rb svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .rb svg .f { fill: currentColor; stroke: none; }
+  .rb-main { width: 84px; height: 84px; color: #2b1708; border-color: rgba(255, 214, 160, .8);
+             background: radial-gradient(circle at 35% 28%, #f6d29e 0%, #cf9256 42%, #7f4c24 100%);
+             box-shadow: 0 0 0 6px rgba(var(--glow), .14), 0 8px 22px rgba(0, 0, 0, .6), 0 0 28px rgba(208, 148, 95, .35),
+                         inset 0 2px 0 rgba(255, 240, 215, .7), inset 0 -5px 10px rgba(80, 40, 10, .45); }
+  .rb-main svg { width: 36px; height: 36px; }
+  #radioPanel.playing .rb-main::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(232, 172, 112, .7);
+                                        animation: pulse 2.2s ease-out infinite; pointer-events: none; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.35); opacity: 0; } }
+  .rp-ctl { display: flex; align-items: center; justify-content: center; gap: 22px; }
+  .rp-vol { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 2.6vh; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .vbar { display: flex; gap: 3px; } .vbar i { width: 11px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .15); }
+  .vbar i.on { background: var(--plex); box-shadow: 0 0 6px rgba(196, 150, 44, .6); }
+  .rp-sl { width: 100%; font-size: 2.4vh; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .rp-sleep { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .chip { height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 3.1vh; white-space: nowrap;
+          color: #f1dcc6; border: 1px solid rgba(232, 172, 112, .45); background: rgba(140, 95, 55, .22); transition: transform .08s; }
+  .chip:active { transform: scale(.94); background: rgba(140, 95, 55, .6); }
+
+  /* right column: group tabs + close button, below them the station list */
+  .rp-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .rp-top { display: flex; align-items: center; gap: 10px; }
+  .rp-tabs { position: relative; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; display: flex; gap: 4px; padding: 4px; border-radius: 32px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); }
+  .rp-tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; height: 52px; padding: 0 12px; border-radius: 26px; display: flex; align-items: center; justify-content: center;
+         font-size: 3vh; white-space: nowrap; color: var(--muted); transition: background .15s; }
+  .tab { padding: 0 8px; }
+  .tab.on { color: #fbeadb; background: linear-gradient(180deg, #8c5f37, #5b3c22); box-shadow: inset 0 1px 0 rgba(255, 222, 185, .35), 0 2px 6px rgba(0, 0, 0, .4); }
+  .rb-close { width: 60px; height: 60px; }
+  .rp-grid { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 14px; scrollbar-width: none; }
+  .rp-grid::-webkit-scrollbar { display: none; }
+  #radioPanel .rp-grid .rp-group { margin: 16px 0 8px; }
+  #radioPanel .rp-grid .rp-group:first-child { margin-top: 2px; }
+  #radioPanel .rp-grid .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 118px; gap: 10px; }
+  #radioPanel .rp-grid .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; min-height: 0;
+         border-radius: 18px; border: 1px solid rgba(255, 255, 255, .12); background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .02));
+         transition: transform .08s; }
+  #radioPanel .rp-grid .tile:active { transform: scale(.96); }
+  #radioPanel .rp-grid .tile .logo { width: 88%; height: 42%; margin: 0 0 2px; border-radius: 10px; }
+  #radioPanel .rp-grid .tile b { font-size: 3.2vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  #radioPanel .rp-grid .tile span { font-size: 2.4vh; }
+  #radioPanel .rp-grid .tile.on { border-color: var(--plex); box-shadow: 0 0 18px rgba(196, 150, 44, .35), inset 0 0 0 1px rgba(196, 150, 44, .5); }
+  @media (orientation: landscape) {
+    #radioPanel.open { display: flex; gap: 26px; overflow: hidden; padding: 2.2vh max(3vw, env(safe-area-inset-left)); }
+    .rp-side { flex: 0 0 300px; justify-content: space-between; }
+    .rp-main { flex: 1; }
+  }
+  @media (orientation: portrait) { .rp-side { gap: 14px; margin-bottom: 18px; } .rp-main { height: 70vh; } }
+
+  /* Radio card: the same round copper buttons as in the Radio panel; play/stop in gold, sleep minutes as a badge */
+  .s-radio .radio-ctl { justify-items: center; }
+  .s-radio .rbtn { position: relative; width: 46px; height: 46px; padding: 0; border-radius: 50%; color: #fbeadb;
+        border: 1px solid rgba(232, 172, 112, .55); background: radial-gradient(circle at 35% 28%, #b27c4b 0%, #7a4f2c 48%, #472d18 100%);
+        box-shadow: 0 5px 12px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 222, 185, .45), inset 0 -3px 7px rgba(0, 0, 0, .35);
+        transition: transform .08s, box-shadow .08s; }
+  .s-radio .rbtn:active { transform: scale(.93); box-shadow: 0 2px 4px rgba(0, 0, 0, .5), inset 0 3px 8px rgba(0, 0, 0, .55); }
+  .s-radio .rbtn svg { width: 22px; height: 22px; }
+  .s-radio .rbtn[data-act="toggle"] { color: #2b1708; border-color: rgba(255, 214, 160, .8);
+        background: radial-gradient(circle at 35% 28%, #f6d29e 0%, #cf9256 42%, #7f4c24 100%);
+        box-shadow: 0 5px 14px rgba(0, 0, 0, .6), 0 0 16px rgba(208, 148, 95, .35), inset 0 2px 0 rgba(255, 240, 215, .7), inset 0 -4px 8px rgba(80, 40, 10, .45); }
+  .s-radio .rbtn i { position: absolute; top: -5px; right: -7px; padding: 0 4px; border-radius: 8px; font-size: 10px; line-height: 15px;
+        background: var(--plex); color: #1a0f05; }
+  .s-radio .rbtn i:empty { display: none; }
+
+  /* stations after the nightly test: dead = greyed out with a warning sign (can still be tried), on a backup URL = small dot */
+  #radioPanel .rp-grid .tile.dead { opacity: .42; filter: grayscale(1); }
+  #radioPanel .rp-grid .tile.dead b::after { content: ' ⚠'; color: var(--crit); }
+  #radioPanel .rp-grid .tile.backup b::after { content: ' •'; color: var(--warn); }
 </style>
 </head>
 <body>
+<canvas id="sky"></canvas>
+<canvas id="globe"></canvas>
 <div id="main">
+  <div class="col col-l">
   <section class="s-clock">
+    <canvas id="zodiac"></canvas>
     <div class="clock" id="clock">--:--</div>
     <div class="date" id="date"></div>
   </section>
 
   <section class="s-wx">
-    <h2 id="hWeather"></h2>
     <div class="row">
       <div class="wx-icon" id="wxIcon">·</div>
       <div class="wx-temp" id="wxTemp">--°</div>
       <div>
+        <h2 class="city" id="city"></h2>
         <div class="wx-desc" id="wxDesc"></div>
         <div class="sub" id="wxFeel"></div>
       </div>
     </div>
     <div class="sub" id="wxDay" style="margin-top:1.2vh"></div>
+    <div class="sub" id="wxMore"></div>
     <div class="hours" id="wxHours"></div>
   </section>
+  </div>
 
+  <div class="col col-r">
   <section class="s-plex">
-    <h2 id="hPlex">Plex</h2>
-    <div class="plex-line" id="plexLine"></div>
+    <div class="plex-head"><h2>Plex</h2><div class="plex-line" id="plexLine"></div></div>
     <div id="sessions"></div>
   </section>
 
-  <section class="s-disk">
-    <h2 id="hDisks"></h2>
-    <div id="disks"></div>
+  <section class="s-radio" id="radioSec">
+    <div class="radio-head"><h2>Radio</h2><span class="radio-all" id="radioOpen"></span></div>
+    <div class="radio-now"><span class="st off" id="radioLine">…</span><span class="radio-vol" id="radioVol"></span></div>
+    <div class="radio-ctl">
+      <span class="btn rbtn" data-act="toggle" id="rToggle"></span>
+      <span class="btn rbtn" data-act="down"><svg viewBox='0 0 24 24'><path d='M4 9.5h3.5L12 6v12l-4.5-3.5H4z' class='f'/><path d='M15.5 12h5'/></svg></span>
+      <span class="btn rbtn" data-act="up"><svg viewBox='0 0 24 24'><path d='M4 9.5h3.5L12 6v12l-4.5-3.5H4z' class='f'/><path d='M15.5 12h5M18 9.5v5'/></svg></span>
+      <span class="btn rbtn" data-act="sleep"><svg viewBox='0 0 24 24'><path d='M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z'/></svg><i id="rSleep"></i></span>
+    </div>
+    <div class="radio-top" id="radioTop"></div>
   </section>
 
-  <section class="s-sys">
-    <h2 id="hPhone"></h2>
-    <div class="sys" id="sys"></div>
+  <section class="s-info">
+    <div class="info" id="info"></div>
   </section>
 
   <div class="foot" id="foot"></div>
+  </div>
+</div>
+<div id="radioPanel">
+  <div class="rp-side">
+    <div class="rp-hero">
+      <div class="rp-logo" id="rpLogo"></div>
+      <div class="rp-name"><span id="rpName">Radio</span><span class="eq"><i></i><i></i><i></i><i></i></span></div>
+      <div class="rp-now" id="rpNow"></div>
+    </div>
+    <div class="rp-ctl"><span class="rb" id="rpVolDown"><svg viewBox='0 0 24 24'><path d='M6 12h12'/></svg></span><span class="rb rb-main" id="rpStop"></span><span class="rb" id="rpVolUp"><svg viewBox='0 0 24 24'><path d='M6 12h12M12 6v12'/></svg></span></div>
+    <div class="rp-vol"><span class="vbar" id="rpVbar"></span><span id="rpVol">–</span></div>
+    <div class="rp-sl" id="rpSl"></div>
+    <div class="rp-sleep"><span class="chip" data-min="15"></span><span class="chip" data-min="30"></span><span class="chip" data-min="60"></span><span class="chip" data-min="90"></span><span class="chip" data-min="0"></span></div>
+  </div>
+  <div class="rp-main">
+    <div class="rp-top"><div class="rp-tabs" id="rpTabs"></div><span class="rb rb-close" id="rpClose"><svg viewBox='0 0 24 24'><path d='M7 7l10 10M17 7L7 17'/></svg></span></div>
+    <div class="rp-grid" id="rpStations"></div>
+  </div>
 </div>
 <div id="hint"></div>
 
 <script>
 // ---------------- configuration ----------------
 const LANG = 'en';                       // 'en' or 'pl'
-const CITY = 'Warsaw';                   // shown in the weather header
+const CITY = 'Warsaw';                   // shown above the weather
 const LAT = 52.2297, LON = 21.0122;      // weather location (Open-Meteo, no API key needed)
 const TZ = 'Europe/Warsaw';              // time zone for clock, date and weather
+const PLEX_USERS = ['Family', 'Kids'];   // Plex user names shown as fixed lines in the PLEX card
 const DAY_FROM = 6, DAY_TO = 23;         // outside these hours the page is black (night mode)
 const RELOAD_AT = '05:55';               // daily page reload (at night, while the screen is black)
 // -----------------------------------------------
@@ -150,18 +485,22 @@ const RELOAD_AT = '05:55';               // daily page reload (at night, while t
 const I18N = {
   en: {
     locale: 'en-GB', title: 'Server Status',
-    weather: 'weather', plex: 'Plex', disks: 'Disks', phone: 'Phone',
     loading: 'loading…', noWeather: 'no weather data',
-    feels: 'feels like', wind: 'wind', hum: 'hum.',
+    feels: 'feels like', wind: 'wind', hum: 'humidity',
     today: 'Today', rain: 'rain', sunrise: 'sunrise', sunset: 'sunset',
-    running: 'Running · version', plexDown: 'Plex is not responding',
-    noConn: 'No connection to the status server', nobody: 'Nobody is watching',
+    running: 'Running · version', plexDown: 'Plex is not responding', noConn: 'No connection to the status server',
     decision: { directplay: 'original quality', directstream: 'no video transcoding', transcode: 'transcoding' },
-    paused: 'paused', notConnected: 'NOT CONNECTED', freeOf: (f, t) => `${f} GB free of ${t} GB`,
-    freeRam: 'Free RAM', battery: 'Battery', upFor: 'Up for',
-    refreshed: 'Refreshed', lastData: 'Last data from', noData: 'No data',
+    lastData: 'Last data from', noData: 'No data',
     hint: 'Tap the screen to return to full screen',
-    diskNames: {},
+    freeRam: 'Free RAM', load: 'CPU load', cpu: 'CPU', battery: 'Battery', charging: 'Battery (charging)',
+    notConnected: 'NOT CONNECTED',
+    diskNames: {}, usbDrive: 'USB drive',
+    diskShort: { phone: 'Phone', film: 'Media', kids: 'Kids' },   // shown upper-case under each drive ring
+    radio: { speaker: 'phone speaker', wired: 'headphones', na: 'unavailable (the Status app is not running)',
+             connecting: 'connecting…', off: 'off', until: 'until', sound: 'Sound' },
+    radioAll: 'all ›', sleepIn: '☾ Sleep in', chips: ['15 min', '30 min', '1 h', '1.5 h', 'off'],
+    deadTitle: 'did not respond in the test on',
+    zodiac: {},
     wmo: {
       0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Rime fog',
       51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle', 56: 'Freezing drizzle', 57: 'Freezing drizzle',
@@ -173,18 +512,23 @@ const I18N = {
   },
   pl: {
     locale: 'pl-PL', title: 'Status serwera',
-    weather: 'pogoda', plex: 'Plex', disks: 'Dyski', phone: 'Telefon',
     loading: 'wczytuję…', noWeather: 'brak danych o pogodzie',
-    feels: 'odczuwalna', wind: 'wiatr', hum: 'wilg.',
+    feels: 'odczuwalna', wind: 'wiatr', hum: 'wilgotność',
     today: 'Dziś', rain: 'deszcz', sunrise: 'wschód', sunset: 'zachód',
-    running: 'Działa · wersja', plexDown: 'Plex nie odpowiada',
-    noConn: 'Brak połączenia z serwerem statusu', nobody: 'Nikt teraz nie ogląda',
+    running: 'Działa · wersja', plexDown: 'Plex nie odpowiada', noConn: 'Brak połączenia z serwerem statusu',
     decision: { directplay: 'jakość oryginalna', directstream: 'bez przekodowania obrazu', transcode: 'przekodowanie' },
-    paused: 'pauza', notConnected: 'NIEPODŁĄCZONY', freeOf: (f, t) => `${f} GB wolne z ${t} GB`,
-    freeRam: 'RAM wolny', battery: 'Bateria', upFor: 'Działa od',
-    refreshed: 'Odświeżono', lastData: 'Ostatnie dane z', noData: 'Brak danych',
+    lastData: 'Ostatnie dane z', noData: 'Brak danych',
     hint: 'Stuknij ekran, aby wrócić do pełnego ekranu',
-    diskNames: { 'Phone storage': 'Pamięć telefonu', 'Media drive': 'Dysk z filmami' },
+    freeRam: 'Wolny RAM', load: 'Wykorzystanie', cpu: 'CPU', battery: 'Bateria', charging: 'Bateria (ładowanie)',
+    notConnected: 'NIEPODŁĄCZONY',
+    diskNames: { 'Phone storage': 'Pamięć telefonu', 'Media drive': 'Dysk z filmami', 'Kids drive': 'Dysk dla dzieci' }, usbDrive: 'Dysk USB',
+    diskShort: { phone: 'Telefon', film: 'Filmy', kids: 'Dzieci' },
+    radio: { speaker: 'głośnik telefonu', wired: 'słuchawki', na: 'niedostępne (aplikacja Status nie działa)',
+             connecting: 'łączę…', off: 'wyłączone', until: 'do', sound: 'Dźwięk' },
+    radioAll: 'wszystkie ›', sleepIn: '☾ Wyłącz za', chips: ['15 min', '30 min', '1 h', '1,5 h', 'bez'],
+    deadTitle: 'nie odpowiadała przy teście',
+    zodiac: { Aquarius: 'Wodnik', Pisces: 'Ryby', Aries: 'Baran', Taurus: 'Byk', Gemini: 'Bliźnięta', Cancer: 'Rak',
+              Leo: 'Lew', Virgo: 'Panna', Libra: 'Waga', Scorpio: 'Skorpion', Sagittarius: 'Strzelec', Capricorn: 'Koziorożec' },
     wmo: {
       0: 'Bezchmurnie', 1: 'Przeważnie pogodnie', 2: 'Częściowe zachmurzenie', 3: 'Pochmurno', 45: 'Mgła', 48: 'Mgła szronowa',
       51: 'Słaba mżawka', 53: 'Mżawka', 55: 'Gęsta mżawka', 56: 'Marznąca mżawka', 57: 'Marznąca mżawka',
@@ -197,7 +541,6 @@ const I18N = {
 };
 const T = I18N[LANG] || I18N.en;
 const LOCALE = T.locale;
-
 const IS_SERVER = ['127.0.0.1', 'localhost'].includes(location.hostname);
 const APP = window.StatusApp || null;     // the "Server Status" Android app on the phone
 
@@ -214,11 +557,11 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 // --- static texts in the selected language ---
 document.documentElement.lang = LANG;
 document.title = T.title;
-$('hWeather').textContent = `${CITY} · ${T.weather}`;
-$('hPlex').textContent = T.plex;
-$('hDisks').textContent = T.disks;
-$('hPhone').textContent = T.phone;
+$('city').textContent = CITY;
 $('wxDesc').textContent = T.loading;
+$('radioOpen').textContent = T.radioAll;
+$('rpSl').textContent = T.sleepIn;
+document.querySelectorAll('.rp-sleep .chip').forEach((c, i) => { c.textContent = T.chips[i]; });
 $('hint').textContent = T.hint;
 
 // --- clock, night mode, daily reload ---
@@ -237,8 +580,311 @@ setInterval(tick, 1000); tick();
 function shift() {
   const r = () => Math.round(Math.random() * 16 - 8);
   $('main').style.transform = `translate(${r()}px, ${r()}px)`;
+  $('globe').style.transform = `translate(calc(-50% + ${r()}px), calc(-50% + ${r()}px))`;
 }
 setInterval(shift, 60 * 1000);
+
+// --- rotating Earth (hologram): Natural Earth 1:50m coastlines, shaded land, grid, Moon on its orbit ---
+// Drawn on a plain canvas at GLOBE.fps frames/s; nothing is drawn at night or while the page is hidden.
+const GLOBE = { w: 214, h: 214, r: 62, rgb: '0, 229, 255', rgb2: '128, 216, 255', fps: 8, turn: 80,   // turn = seconds per rotation
+                land: 'shade',     // land: 'shade' = filled and shaded like a sphere, 'dots' = grid of dots
+                orbitLine: false };   // Moon orbit line (hidden: it reached under the Weather and Radio cards)
+const VIEW = { tilt: 18 * Math.PI / 180, roll: -23.5 * Math.PI / 180 };   // seen slightly from above; Earth's axial tilt
+const globe = { pts: null, dots: null, grid: null, land: null, lon0: 0, moon: 0, last: 0, t: 0 };
+
+// zodiac signs (dates as in horoscopes) and their constellations: stars [right ascension h, declination °, 1 = bright], lines [i, j]
+const ZODIAC = [
+  ['Aquarius', 120, '20.01 – 18.02', [[21.53, -5.57, 1], [22.10, -.32, 1], [22.36, -1.39], [22.48, -.02], [22.59, -.12], [22.42, 1.38], [22.88, -7.58], [22.83, -13.59],
+    [22.91, -15.82, 1], [20.79, -9.5], [23.24, -6.05], [23.26, -9.09]], [[9, 0], [0, 1], [1, 2], [2, 3], [3, 4], [3, 5], [2, 6], [6, 7], [7, 8], [6, 10], [10, 11]]],
+  ['Pisces', 219, '19.02 – 20.03', [[23.29, 3.28], [23.47, 6.38], [23.67, 5.63], [23.70, 1.78], [23.45, 1.26], [23.99, 6.86], [.81, 7.59], [1.05, 7.89],
+    [2.03, 2.76, 1], [1.76, 9.16], [1.52, 15.35, 1], [1.23, 24.58], [1.19, 30.09]], [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [2, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12]]],
+  ['Aries', 321, '21.03 – 19.04', [[2.83, 27.26], [2.12, 23.46, 1], [1.91, 20.81, 1], [1.89, 19.29]], [[0, 1], [1, 2], [2, 3]]],
+  ['Taurus', 420, '20.04 – 20.05', [[4.60, 16.51, 1], [5.44, 28.61, 1], [5.63, 21.14], [4.48, 19.18], [4.38, 17.54], [4.33, 15.63], [4.48, 15.87], [4.01, 12.49], [3.79, 24.11, 1]],
+    [[1, 3], [3, 4], [4, 5], [5, 6], [6, 0], [0, 2], [5, 7]]],
+  ['Gemini', 521, '21.05 – 20.06', [[7.58, 31.89, 1], [7.76, 28.03, 1], [6.73, 25.13], [6.38, 22.51], [6.25, 22.51], [7.34, 21.98], [7.07, 20.57], [6.63, 16.40, 1], [7.74, 24.40], [6.75, 12.90]],
+    [[0, 1], [0, 2], [2, 3], [3, 4], [1, 8], [8, 5], [5, 6], [6, 7], [5, 9]]],
+  ['Cancer', 621, '21.06 – 22.07', [[8.28, 9.19, 1], [8.74, 18.15], [8.72, 21.47], [8.78, 28.76], [8.97, 11.86]], [[0, 1], [1, 2], [2, 3], [1, 4]]],
+  ['Leo', 723, '23.07 – 22.08', [[10.14, 11.97, 1], [10.12, 16.76], [10.33, 19.84, 1], [10.28, 23.42], [9.88, 26.01], [9.76, 23.77], [11.24, 20.52], [11.82, 14.57, 1], [11.24, 15.43]],
+    [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [2, 6], [6, 7], [7, 8], [8, 0], [6, 8]]],
+  ['Virgo', 823, '23.08 – 22.09', [[13.42, -11.16, 1], [12.69, -1.45, 1], [13.04, 10.96], [12.93, 3.40], [12.33, -.67], [11.84, 1.76], [13.58, -.60], [14.27, -6.00], [14.77, 1.89]],
+    [[2, 3], [3, 1], [1, 4], [4, 5], [1, 0], [3, 6], [6, 8]]],
+  ['Libra', 923, '23.09 – 22.10', [[14.85, -16.04, 1], [15.28, -9.38, 1], [15.59, -14.79], [15.07, -25.28], [15.62, -28.13]], [[3, 0], [0, 1], [1, 2], [2, 0], [2, 4]]],
+  ['Scorpio', 1023, '23.10 – 21.11', [[16.49, -26.43, 1], [16.09, -19.81], [16.01, -22.62, 1], [15.98, -26.11], [16.35, -25.59], [16.60, -28.22], [16.84, -34.29], [16.86, -38.05],
+    [16.90, -42.36], [17.20, -43.24], [17.62, -43.00, 1], [17.79, -40.13], [17.71, -39.03], [17.56, -37.10, 1]],
+    [[1, 2], [2, 3], [2, 4], [4, 0], [0, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 13]]],
+  ['Sagittarius', 1122, '22.11 – 21.12', [[18.40, -34.38, 1], [18.35, -29.83], [18.10, -30.42], [18.47, -25.42], [18.76, -26.99], [18.92, -26.30, 1], [19.12, -27.67], [19.04, -29.88], [18.29, -36.76]],
+    [[2, 1], [1, 0], [0, 2], [1, 3], [3, 4], [1, 4], [4, 5], [5, 6], [6, 7], [7, 4], [7, 0], [0, 8]]],
+  ['Capricorn', 1222, '22.12 – 19.01', [[20.30, -12.54, 1], [20.35, -14.78, 1], [20.77, -25.27], [20.86, -26.92], [21.44, -22.41], [21.67, -16.66], [21.78, -16.13, 1], [21.37, -16.83], [21.10, -17.23]],
+    [[0, 1], [1, 2], [2, 3], [3, 4], [4, 6], [6, 5], [5, 7], [7, 8], [8, 1]]],
+];
+function zodiacNow(d = new Date()) {
+  const md = (d.getMonth() + 1) * 100 + d.getDate();
+  let z = ZODIAC[ZODIAC.length - 1];          // 1-19 January: Capricorn from the previous year
+  for (const s of ZODIAC) if (md >= s[1]) z = s;
+  return z;
+}
+// constellation -> points on the canvas in a square of side box centred at (x0, y0); sky seen from Earth: east on the left
+function zodiacLayout(z, x0, y0, box) {
+  const st = z[3], ra0 = st[0][0];
+  const raw = st.map(([ra, de]) => { let d = ra - ra0; if (d > 12) d -= 24; if (d < -12) d += 24; return [d, de]; });
+  const dm = raw.reduce((s, p) => s + p[1], 0) / raw.length * Math.PI / 180;
+  const xy = raw.map(([d, de]) => [-d * 15 * Math.cos(dm), -de]);
+  const xs = xy.map(p => p[0]), ys = xy.map(p => p[1]);
+  const mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const s = box / Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys), 1);
+  return xy.map(([x, y], i) => [x0 + (x - mx) * s, y0 + (y - my) * s, st[i][2] ? 1 : 0]);
+}
+// --- stars over the whole background: sparse, of different size and colour, avoiding the cards and the Earth; ~4 frames/s ---
+const sky = { stars: [], last: 0 };
+function skyInit() {
+  const c = $('sky'), dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
+  c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+  sky.ctx = c.getContext('2d'); sky.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); sky.W = W; sky.H = H;
+  const cards = [...document.querySelectorAll('.s-wx, .s-plex, .s-radio, .s-info')].map(e => e.getBoundingClientRect());
+  const g = $('globe').getBoundingClientRect(), gx = g.left + g.width / 2, gy = g.top + g.height / 2;
+  let seed = 11;
+  const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;   // same positions on every recalculation
+  sky.stars = [];
+  for (let i = Math.round(W * H / 5400); i > 0; i--) {      // ~1 star per 5400 px² (before removing the ones under cards)
+    const x = rnd() * W, y = rnd() * H, r = .35 + Math.pow(rnd(), 3) * 1.15, tint = rnd();
+    const ph = rnd() * 6.3, sp = .3 + rnd() * 1.2, base = .3 + rnd() * .55;
+    if (cards.some(b => x > b.left - 6 && x < b.right + 6 && y > b.top - 6 && y < b.bottom + 6)) continue;
+    if (g.width && Math.hypot(x - gx, y - gy) < GLOBE.r * 1.4) continue;
+    sky.stars.push([x, y, r, tint < .7 ? '225, 238, 255' : tint < .85 ? '255, 226, 186' : GLOBE.rgb2, ph, sp, base]);
+  }
+}
+function skyDraw(t) {
+  const ctx = sky.ctx;
+  ctx.clearRect(0, 0, sky.W, sky.H);
+  for (const [x, y, r, col, ph, sp, base] of sky.stars) {
+    const a = base * (.6 + .4 * Math.sin(t * sp + ph));
+    if (r > 1) {                       // brighter stars: a glow, the brightest also a cross-shaped sparkle
+      ctx.fillStyle = `rgba(${col}, ${(a * .16).toFixed(3)})`; ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, 7); ctx.fill();
+      if (r > 1.25) {
+        ctx.strokeStyle = `rgba(${col}, ${(a * .4).toFixed(3)})`; ctx.lineWidth = .5; ctx.beginPath();
+        ctx.moveTo(x - r * 4.5, y); ctx.lineTo(x + r * 4.5, y); ctx.moveTo(x, y - r * 4.5); ctx.lineTo(x, y + r * 4.5); ctx.stroke();
+      }
+    }
+    ctx.fillStyle = `rgba(${col}, ${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+}
+addEventListener('resize', () => setTimeout(skyInit, 300));   // screen rotation: new size and new card positions
+setInterval(() => sky.ctx && skyInit(), 5 * 60 * 1000);       // cards may change height (e.g. weather)
+
+// --- land as an image (no artefacts at the edge of the sphere) ---
+// A land mask in equirectangular projection is drawn once from the coastlines; for every pixel of the disc the latitude,
+// longitude relative to the centre and lighting are computed once. Each frame only reads the mask shifted by the rotation.
+function globeLandMask(MW, MH) {
+  // canvas in normal memory (willReadFrequently): reading pixels from a GPU canvas right after start
+  // sometimes returned an empty mask and the continents lost their fill for the whole session
+  const mc = document.createElement('canvas');
+  mc.width = MW; mc.height = MH;
+  const m = mc.getContext('2d', { willReadFrequently: true }), path = new Path2D();
+  for (const a of globe.raw) {
+    // a coastline crossing the date line (Eurasia at Chukotka, Wrangel Island) is drawn in one piece
+    // and repeated 360° to the left and right; otherwise the 180° -> -180° edge ran across the whole map (a band at the pole)
+    const lon = [a[0] / 10];
+    for (let i = 2; i < a.length; i += 2) {
+      let l = a[i] / 10;
+      while (l - lon[lon.length - 1] > 180) l -= 360;
+      while (l - lon[lon.length - 1] < -180) l += 360;
+      lon.push(l);
+    }
+    const polar = Math.abs(lon[lon.length - 1] - lon[0]) > 180;   // Antarctica: surrounds the pole, drawn as is
+    for (const shift of polar ? [0] : [-360, 0, 360]) {
+      for (let i = 0; i < a.length; i += 2) {
+        const x = ((polar ? a[i] / 10 : lon[i / 2]) + shift + 180) / 360 * MW, y = (90 - a[i + 1] / 10) / 180 * MH;
+        if (i) path.lineTo(x, y); else path.moveTo(x, y);
+      }
+      path.closePath();
+    }
+  }
+  m.fillStyle = '#fff'; m.fill(path, 'evenodd');
+  const md = m.getImageData(0, 0, MW, MH).data, mask = new Uint8Array(MW * MH);
+  let land = 0;
+  for (let i = 0; i < mask.length; i++) { mask[i] = md[i * 4 + 3]; if (mask[i]) land++; }
+  return land > MW * MH * .05 ? mask : null;      // land is ~30% of the map; an empty mask = failed read
+}
+function globeLandInit(dpr) {
+  const MW = 2048, MH = 1024, mask = globeLandMask(MW, MH);
+  if (!mask) { setTimeout(() => globeLandInit(dpr), 2000); return; }   // try again in 2 s
+  const N = Math.round(2 * GLOBE.r * dpr), cf0 = Math.cos(VIEW.tilt), sf0 = Math.sin(VIEW.tilt);
+  const cr = Math.cos(VIEW.roll), sr = Math.sin(VIEW.roll), L = [-.45, .5, .74], Ln = Math.hypot(...L);   // light from the top left
+  const lc = document.createElement('canvas');
+  lc.width = lc.height = N;
+  const lx = lc.getContext('2d'), img = lx.createImageData(N, N), pix = [], row = [], col = [], alpha = [];
+  for (let py = 0; py < N; py++) for (let px = 0; px < N; px++) {
+    const u = (px + .5) / N * 2 - 1, w = 1 - (py + .5) / N * 2, rr = u * u + w * w;
+    if (rr >= 1) continue;
+    const z = Math.sqrt(1 - rr), x = u * cr + w * sr, y = -u * sr + w * cr;
+    const la = Math.asin(Math.max(-1, Math.min(1, cf0 * y + sf0 * z))), dl = Math.atan2(x, cf0 * z - sf0 * y);
+    const sh = Math.max(0, (u * L[0] + w * L[1] + z * L[2]) / Ln), o = (py * N + px) * 4;
+    img.data[o] = 170 * sh * sh; img.data[o + 1] = 80 + 160 * sh; img.data[o + 2] = 100 + 155 * sh;
+    pix.push(o); row.push(Math.min(MH - 1, Math.floor((.5 - la / Math.PI) * MH)) * MW);
+    col.push(dl / (2 * Math.PI) * MW); alpha.push(140 + 100 * sh);
+  }
+  globe.land = { MW, mask, lc, lx, img, pix: Int32Array.from(pix), row: Int32Array.from(row), col: Float32Array.from(col), alpha: Float32Array.from(alpha) };
+}
+function globeLandDraw(ctx, x0, y0) {
+  const L = globe.land, d = L.img.data, MW = L.MW, off = (globe.lon0 / 360 + 2.5) * MW;   // +2 turns: always positive
+  for (let k = 0; k < L.pix.length; k++) {
+    const cov = L.mask[L.row[k] + ((L.col[k] + off) | 0) % MW];
+    d[L.pix[k] + 3] = cov ? L.alpha[k] * cov / 255 : 0;
+  }
+  L.lx.putImageData(L.img, 0, 0);
+  ctx.drawImage(L.lc, x0, y0, 2 * GLOBE.r, 2 * GLOBE.r);
+}
+
+// parts that never change: drawn once on separate canvases, only copied in each frame
+function globeLayersInit(dpr) {
+  const W = GLOBE.w, H = GLOBE.h, cx = W / 2, cy = H / 2, R = GLOBE.r, C = GLOBE.rgb;
+  const layer = draw => {
+    const c = document.createElement('canvas');
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    const x = c.getContext('2d'); x.scale(dpr, dpr); draw(x);
+    return c;
+  };
+  globe.orbit = { rx: R * 1.62, ry: R * .42, tilt: -14 * Math.PI / 180 };
+  globe.layerOrbit = layer(x => {
+    x.lineWidth = .6; x.strokeStyle = `rgba(${C}, .28)`;
+    x.beginPath(); x.ellipse(cx, cy, globe.orbit.rx, globe.orbit.ry, globe.orbit.tilt, 0, 2 * Math.PI); x.stroke();
+  });
+  globe.layerBack = layer(x => {          // atmosphere glow and the dark core of the hologram
+    let g = x.createRadialGradient(cx, cy, R * .92, cx, cy, R * 1.32);
+    g.addColorStop(0, `rgba(${C}, .30)`); g.addColorStop(1, `rgba(${C}, 0)`);
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R * 1.32, 0, 7); x.fill();
+    g = x.createRadialGradient(cx - R * .3, cy - R * .35, R * .1, cx, cy, R);
+    g.addColorStop(0, 'rgba(0, 60, 75, .92)'); g.addColorStop(1, 'rgba(0, 18, 26, .96)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+  });
+  globe.layerFront = layer(x => {         // shadow at the edge of the sphere (sense of volume) and the rim
+    const g = x.createRadialGradient(cx - R * .25, cy - R * .3, R * .25, cx, cy, R);
+    g.addColorStop(0, 'rgba(0, 0, 0, 0)'); g.addColorStop(1, 'rgba(0, 0, 0, .45)');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.fill();
+    x.lineWidth = 1.1; x.strokeStyle = `rgba(${C}, .55)`; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.stroke();
+  });
+}
+
+function globePrep(list) {          // [lon*10, lat*10, ...] -> trigonometric values computed once
+  const n = list.length / 2, a = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const lo = list[2 * i] / 10 * Math.PI / 180, la = list[2 * i + 1] / 10 * Math.PI / 180;
+    a.set([Math.cos(la), Math.sin(la), Math.cos(lo), Math.sin(lo)], i * 4);
+  }
+  return a;
+}
+async function globeInit() {
+  try {
+    const e = await (await fetch('earth.json')).json();
+    globe.raw = e.c;
+    globe.pts = e.c.map(globePrep);
+    globe.dots = globePrep(e.d);
+    const g = [];
+    for (let lo = -180; lo < 180; lo += 30) { const m = []; for (let la = -90; la <= 90; la += 6) m.push(lo * 10, la * 10); g.push(m); }
+    for (let la = -60; la <= 60; la += 30) { const m = []; for (let lo = -180; lo <= 180; lo += 6) m.push(lo * 10, la * 10); g.push(m); }
+    globe.grid = g.map(globePrep);
+    const c = $('globe'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = Math.round(GLOBE.w * dpr); c.height = Math.round(GLOBE.h * dpr);
+    globe.ctx = c.getContext('2d');
+    globe.ctx.scale(dpr, dpr);
+    const zc = $('zodiac');
+    zc.width = Math.round(100 * dpr); zc.height = Math.round(100 * dpr);
+    globe.zctx = zc.getContext('2d');
+    globe.zctx.scale(dpr, dpr);
+    globeLandInit(dpr);
+    globeLayersInit(dpr);
+    skyInit(); setTimeout(skyInit, 5000);
+    setTimeout(globeFrame, 0);
+  } catch (e) { /* without the data the Earth is simply not shown */ }
+}
+function globeFrame() {
+  setTimeout(globeFrame, 1000 / GLOBE.fps);
+  const t = performance.now(), night = document.body.classList.contains('night');
+  if (document.hidden || night) { globe.last = 0; return; }
+  if (sky.ctx && t - sky.last >= 250) { sky.last = t; skyDraw(t / 1000); }
+  if (!$('globe').offsetWidth) { globe.last = 0; return; }
+  const dt = globe.last ? Math.min(t - globe.last, 500) / 1000 : 0;
+  globe.last = t;
+  globe.lon0 = (globe.lon0 - 360 * dt / GLOBE.turn) % 360;   // like the real Earth: from west to east
+  // the Moon orbits in the same direction as the Earth turns (near side of the orbit: left to right)
+  globe.moon = ((globe.moon - 2 * Math.PI * dt / (GLOBE.turn * .6)) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+  globe.t += dt;
+  globeDraw();
+  if (t - (globe.zlast || 0) >= 250) { globe.zlast = t; zodiacDraw(); }
+}
+// constellation of the current zodiac sign with its name and dates (left of the clock)
+function zodiacDraw() {
+  const ctx = globe.zctx, W = 100, z = zodiacNow(), zp = zodiacLayout(z, W / 2, 37, 64);
+  ctx.clearRect(0, 0, W, 100);
+  ctx.lineWidth = .6; ctx.strokeStyle = `rgba(${GLOBE.rgb2}, .35)`; ctx.beginPath();
+  for (const [i, j] of z[4]) { ctx.moveTo(zp[i][0], zp[i][1]); ctx.lineTo(zp[j][0], zp[j][1]); }
+  ctx.stroke();
+  zp.forEach(([x, y, b], i) => {
+    const tw = .75 + .25 * Math.sin(globe.t * 1.3 + i * 1.7);
+    ctx.fillStyle = `rgba(${GLOBE.rgb2}, ${(.22 * tw).toFixed(2)})`; ctx.beginPath(); ctx.arc(x, y, b ? 4.4 : 3, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(235, 250, 255, ${(.95 * tw).toFixed(2)})`; ctx.beginPath(); ctx.arc(x, y, b ? 1.8 : 1.25, 0, 7); ctx.fill();
+  });
+  ctx.textAlign = 'center'; ctx.fillStyle = `rgba(${GLOBE.rgb2}, .85)`;
+  ctx.font = '600 12px Roboto, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '2.5px';
+  ctx.fillText((T.zodiac[z[0]] || z[0]).toUpperCase(), W / 2, 85);
+  ctx.font = '400 9.5px Roboto, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  ctx.fillStyle = `rgba(${GLOBE.rgb2}, .6)`; ctx.fillText(LANG === 'pl' ? z[2] : zodiacDates(z[2]), W / 2, 98);
+}
+// '20.01 – 18.02' -> e.g. '20 Jan – 18 Feb' in the page language
+function zodiacDates(s) {
+  return s.split(' – ').map(p => { const [d, m] = p.split('.').map(Number);
+    return new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2001, m - 1, d))); }).join(' – ');
+}
+function globeDraw() {
+  const ctx = globe.ctx, W = GLOBE.w, H = GLOBE.h, cx = W / 2, cy = H / 2, R = GLOBE.r, C = GLOBE.rgb;
+  const cf0 = Math.cos(VIEW.tilt), sf0 = Math.sin(VIEW.tilt);
+  const l0 = globe.lon0 * Math.PI / 180, cl0 = Math.cos(l0), sl0 = Math.sin(l0);
+  const cr = Math.cos(VIEW.roll), sr = Math.sin(VIEW.roll);
+  // lines on the sphere: front and back separately; consecutive visible points joined into one polyline
+  const lines = (sets, front, back) => {
+    const pf = new Path2D(), pb = new Path2D();
+    for (const a of sets) {
+      let side = 0;                   // 1 = front, -1 = back, 0 = start of a line
+      for (let i = 0; i < a.length; i += 4) {
+        const cp = a[i], sp = a[i + 1], cd = a[i + 2] * cl0 + a[i + 3] * sl0, sd = a[i + 3] * cl0 - a[i + 2] * sl0;
+        const x = cp * sd, y = cf0 * sp - sf0 * cp * cd, z = sf0 * sp + cf0 * cp * cd;
+        const X = cx + R * (x * cr - y * sr), Y = cy - R * (x * sr + y * cr), s = z > 0 ? 1 : -1;
+        if (s === side) (s > 0 ? pf : pb).lineTo(X, Y); else { (s > 0 ? pf : pb).moveTo(X, Y); side = s; }
+      }
+    }
+    if (back) { ctx.strokeStyle = back; ctx.stroke(pb); }
+    ctx.strokeStyle = front; ctx.stroke(pf);
+  };
+  // the Moon on its orbit (an ellipse in a slightly tilted plane)
+  const o = globe.orbit, cm = Math.cos(globe.moon), sm = Math.sin(globe.moon);
+  const moon = [cx + o.rx * cm * Math.cos(o.tilt) - o.ry * sm * Math.sin(o.tilt), cy + o.rx * cm * Math.sin(o.tilt) + o.ry * sm * Math.cos(o.tilt)];
+  const drawMoon = () => {           // small sphere lit from the top left, with a soft glow
+    ctx.fillStyle = 'rgba(200, 225, 255, .18)'; ctx.beginPath(); ctx.arc(moon[0], moon[1], 7, 0, 7); ctx.fill();
+    const mg = ctx.createRadialGradient(moon[0] - 1.2, moon[1] - 1.3, .3, moon[0], moon[1], 3.4);
+    mg.addColorStop(0, '#f4f8ff'); mg.addColorStop(1, '#7d8a99');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(moon[0], moon[1], 3.4, 0, 7); ctx.fill();
+  };
+  ctx.clearRect(0, 0, W, H);
+  if (GLOBE.orbitLine) ctx.drawImage(globe.layerOrbit, 0, 0, W, H);
+  if (sm <= 0) drawMoon();             // behind the Earth
+  ctx.drawImage(globe.layerBack, 0, 0, W, H);
+  if (GLOBE.land === 'shade' && globe.land) globeLandDraw(ctx, cx - R, cy - R);
+  ctx.lineWidth = .55; lines(globe.grid, `rgba(${C}, .30)`, `rgba(${C}, .07)`);
+  ctx.lineWidth = .85; lines(globe.pts, `rgba(${C}, .95)`, `rgba(${C}, .08)`);
+  if (GLOBE.land === 'dots') {         // variant with land dots
+    const d = globe.dots;
+    for (let i = 0; i < d.length; i += 4) {
+      const cp = d[i], sp = d[i + 1], cd = d[i + 2] * cl0 + d[i + 3] * sl0, sd = d[i + 3] * cl0 - d[i + 2] * sl0;
+      const x = cp * sd, y = cf0 * sp - sf0 * cp * cd, z = sf0 * sp + cf0 * cp * cd;
+      if (z <= 0) continue;
+      ctx.fillStyle = `rgba(${GLOBE.rgb2}, ${(.25 + .65 * z).toFixed(2)})`;
+      ctx.fillRect(cx + R * (x * cr - y * sr) - .65, cy - R * (x * sr + y * cr) - .65, 1.3, 1.3);
+    }
+  }
+  ctx.drawImage(globe.layerFront, 0, 0, W, H);
+  if (sm > 0) drawMoon();              // in front of the Earth
+}
+globeInit();
 
 // --- weather (Open-Meteo, no API key) ---
 const WMO_ICONS = {
@@ -255,14 +901,22 @@ const wx = (code, day = 1) => {
 };
 const hhmm = iso => iso.slice(11, 16);
 
+// text on one line: if it does not fit, the font shrinks exactly as much as needed
+function fitLine(el) {
+  el.style.fontSize = '';
+  if (el.scrollWidth > el.clientWidth)
+    el.style.fontSize = (parseFloat(getComputedStyle(el).fontSize) * el.clientWidth / el.scrollWidth * 0.98).toFixed(1) + 'px';
+}
+addEventListener('resize', () => { fitLine($('wxDay')); fitLine($('wxMore')); });
+
 let wxTimer = null, wxLoaded = false;
 async function loadWeather() {
   clearTimeout(wxTimer);
   let ok = false;
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
-      '&hourly=temperature_2m,weather_code,precipitation_probability,is_day' +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,pressure_msl' +
+      '&hourly=temperature_2m,weather_code,precipitation_probability,is_day,pressure_msl' +
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
       `&timezone=${encodeURIComponent(TZ)}&forecast_days=2`;
     const j = await (await fetch(url)).json();
@@ -270,12 +924,19 @@ async function loadWeather() {
     $('wxIcon').textContent = w.icon;
     $('wxTemp').textContent = Math.round(c.temperature_2m) + '°';
     $('wxDesc').textContent = w.text;
-    $('wxFeel').innerHTML = `${T.feels} ${Math.round(c.apparent_temperature)}°<br>${T.wind} ${Math.round(c.wind_speed_10m)} km/h · ${T.hum} ${c.relative_humidity_2m}%`;
     const d = j.daily;
     $('wxDay').textContent = `${T.today} ${Math.round(d.temperature_2m_min[0])}° / ${Math.round(d.temperature_2m_max[0])}° · ${T.rain} ${d.precipitation_probability_max[0] ?? 0}% · ${T.sunrise} ${hhmm(d.sunrise[0])} · ${T.sunset} ${hhmm(d.sunset[0])}`;
+    fitLine($('wxDay'));
     const now = c.time.slice(0, 13);
     let i = j.hourly.time.findIndex(t => t.slice(0, 13) === now);
     if (i < 0) i = 0;
+    // pressure reduced to sea level (as in weather forecasts) and its trend over the last 3 hours
+    const hp = j.hourly.pressure_msl || [], dp = i >= 3 && hp[i] != null && hp[i - 3] != null ? hp[i] - hp[i - 3] : null;
+    const trend = dp == null ? '' : dp >= 1 ? ' ↑' : dp <= -1 ? ' ↓' : ' →';
+    $('wxFeel').textContent = `${T.feels} ${Math.round(c.apparent_temperature)}°`;
+    $('wxMore').innerHTML = `${T.wind} ${Math.round(c.wind_speed_10m)} km/h · ${T.hum} ${c.relative_humidity_2m}%` +
+      (c.pressure_msl != null ? ` · <b class="hpa">${Math.round(c.pressure_msl)} hPa${trend}</b>` : '');
+    fitLine($('wxMore'));
     let html = '';
     for (let k = 1; k <= 5; k++) {
       const x = i + k * 3; if (x >= j.hourly.time.length) break;
@@ -301,6 +962,7 @@ function readBattery() {
   return battery;
 }
 
+
 async function loadStatus() {
   let s;
   try {
@@ -320,36 +982,52 @@ async function loadStatus() {
     ? `<span class="dot"></span>${T.running} ${esc((p.version || '').split('.').slice(0, 3).join('.'))}`
     : `<span class="dot off"></span>${T.plexDown}`;
 
-  const ss = s.sessions || [];
-  $('sessions').innerHTML = !p.online ? '' : ss.length ? ss.map(x => `
-    <div class="sess">
-      <div class="t">▶ <span>${esc(x.user)}</span> · ${esc(x.title)}${x.year ? ' (' + x.year + ')' : ''}</div>
-      <div class="sub">${esc(x.player)} · ${T.decision[x.decision] || ''}${x.state === 'paused' ? ' · ' + T.paused : ''} · ${Math.round(x.progress * 100)}%</div>
-      <div class="bar"><div style="width:${Math.round(x.progress * 100)}%"></div></div>
-    </div>`).join('') : `<div class="sub" style="margin-top:1vh">${T.nobody}</div>`;
+  // fixed lines for PLEX_USERS; a session of another account takes a free line
+  const ss = p.online ? (s.sessions || []) : [];
+  const lines = PLEX_USERS.map(n => ({ n, x: ss.find(x => x.user === n) }));
+  ss.filter(x => !PLEX_USERS.includes(x.user)).forEach(x => {
+    const free = lines.find(l => !l.x);
+    if (free) { free.n = x.user; free.x = x; }
+  });
+  const activity = x => `${x.state === 'paused' ? '❚❚' : '▶︎'} ${esc(x.title)}${x.year ? ' (' + x.year + ')' : ''}` +
+    ` · ${Math.round(x.progress * 100)}% · ${esc(x.player)}${x.decision === 'transcode' ? ' · ' + T.decision.transcode : ''}`;
+  $('sessions').innerHTML = '<div class="users">' + lines.map(({ n, x }) =>
+    `<div class="user"><span class="n">${esc(n)}</span><span class="a">${x ? activity(x) : ''}</span></div>`).join('') + '</div>';
 
-  $('disks').innerHTML = (s.disks || []).map(d => {
-    const name = esc(T.diskNames[d.name] || d.name);
-    if (d.missing) {
-      return `<div class="disk"><div class="top"><span>${name}</span><span class="alarm">${T.notConnected}</span></div>
-        <div class="bar"><div class="crit" style="width:100%"></div></div></div>`;
-    }
-    const free = gb(d.free_kb), total = gb(d.total_kb), used = 1 - d.free_kb / d.total_kb;
-    const cls = free < d.crit_gb ? 'crit' : free < d.warn_gb ? 'warn' : 'ok';
-    return `<div class="disk"><div class="top"><span>${name}</span><span>${T.freeOf(n0(free), n0(total))}</span></div>
-      <div class="bar"><div class="${cls}" style="width:${Math.max(2, Math.round(used * 100))}%"></div></div></div>`;
-  }).join('');
-
-  const parts = [];
-  if (s.mem && s.mem.avail_kb) parts.push(`${T.freeRam} <b>${n1(gb(s.mem.avail_kb))} GB</b>`);
-  if (s.cpu_temp_c != null) parts.push(`CPU <b>${s.cpu_temp_c}°C</b>`);
+  // info table at the bottom of the right column: a system row (free RAM, CPU load, CPU temperature, battery) and a drive row,
+  // each with equal columns; every newly connected drive is added automatically as another cell
+  const cell = (k, v, rest, c, key) => ({ k, v, rest, c, key });
+  const row = cells => cells.length ? '<div class="tr">' + cells.map(x =>
+    `<div class="c${x.key ? ' c-' + x.key : ''}"><span class="k">${esc(x.k)}</span>` +
+    `<span class="v"><b class="${x.c || ''}">${x.v}</b>${x.rest ? `<i>${x.rest}</i>` : ''}</span></div>`).join('') + '</div>' : '';
+  const sys = [];
+  if (s.mem && s.mem.avail_kb) sys.push(cell(T.freeRam, n1(gb(s.mem.avail_kb)), ` / ${n1(gb(s.mem.total_kb))} GB`, '', 'ram'));
+  // CPU load (average over ~30 s) in its own column right after RAM, next to it the CPU temperature
+  if (s.cpu_load != null) sys.push(cell(T.load, `${s.cpu_load}%`, '', '', 'load'));
+  if (s.cpu_temp_c != null) sys.push(cell(T.cpu, `${s.cpu_temp_c}°C`, '', '', 'cpu'));
   const bat = readBattery();
-  if (bat) parts.push(`${T.battery} <b>${Math.round(bat.level * 100)}%</b>${bat.charging ? ' ⚡' : ''}${bat.temp ? ` · <b>${bat.temp}°C</b>` : ''}`);
-  if (s.uptime) parts.push(`${T.upFor} <b>${esc(s.uptime)}</b>`);
-  $('sys').innerHTML = parts.map(x => `<span>${x}</span>`).join('');
+  if (bat) sys.push(cell(bat.charging ? T.charging : T.battery, `${Math.round(bat.level * 100)}%`, bat.temp ? ` · ${bat.temp}°C` : '', '', bat.charging ? 'bat chg' : 'bat'));
+  // drive names from status-server.py: 'Phone storage', 'Media drive', 'Kids drive', 'USB drive <ID>' (auto-detected)
+  const diskKey = d => d.name === 'Phone storage' ? 'phone' : d.name === 'Kids drive' ? 'kids' : d.name === 'Media drive' ? 'film'
+    : d.name.startsWith('USB drive') ? 'usb' : 'hdd';
+  const diskName = d => T.diskNames[d.name] || d.name.replace(/^USB drive/, T.usbDrive);
+  // ring = free space (arc), percentage of free space inside; short name under the free GB
+  const ringCell = d => {
+    const key = diskKey(d), nm = `<div class="nm">${esc(T.diskShort[key] || diskName(d))}</div>`;
+    if (d.missing) return `<div class="c dk c-${key}"><div class="ln"><div class="ring"><svg viewBox="0 0 36 36"><circle class="tk" cx="18" cy="18" r="15.9" fill="none" stroke-width="3"/></svg>` +
+      `<span class="crit">!</span></div><div class="tx"><div class="dl"><span class="k">${esc(diskName(d))}</span><span class="v"><b class="crit">${T.notConnected}</b></span></div>${nm}</div></div></div>`;
+    const free = gb(d.free_kb), pct = Math.round(d.free_kb / d.total_kb * 100);
+    const c = free < d.crit_gb ? 'crit' : free < d.warn_gb ? 'warn' : '';
+    return `<div class="c dk c-${key}"><div class="ln"><div class="ring"><svg viewBox="0 0 36 36">` +
+      `<circle class="tk" cx="18" cy="18" r="15.9" fill="none" stroke-width="3"/>` +
+      `<circle class="ar ${c}" cx="18" cy="18" r="15.9" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="${pct} 100"/>` +
+      `</svg><span>${pct}%</span></div>` +
+      `<div class="tx"><div class="dl"><span class="k">${esc(diskName(d))}</span><span class="v"><b class="${c}">${n0(free)}</b><i> GB</i></span></div>${nm}</div></div></div>`;
+  };
+  $('info').innerHTML = row(sys) + ((s.disks || []).length ? '<div class="tr dk-row">' + s.disks.map(ringCell).join('') + '</div>' : '');
 
   $('foot').className = 'foot';
-  $('foot').textContent = `${T.refreshed} ${hm(new Date())}`;
+  $('foot').textContent = '';   // the footer is only shown when data is missing (red "Last data from ...")
 }
 loadStatus(); setInterval(loadStatus, 60 * 1000);
 
@@ -382,6 +1060,199 @@ document.addEventListener('visibilitychange', () => {
 });
 setInterval(() => { holdScreen(); updateHint(); }, 30 * 1000);
 holdScreen(); updateHint();
+
+// --- radio: player in the Status app, controlled over HTTP on port 8098 (from this phone and from other devices) ---
+const RADIO = 'http://' + location.hostname + ':8098';
+const RT = T.radio;
+let radio = null, stations = null, panelTimer = null, radioBusy = false;
+const outName = o => !o ? '' : o === 'speaker' ? RT.speaker : o === 'wired' ? RT.wired : o.startsWith('bt:') ? '🔊 ' + o.slice(3) : o;
+async function radioCall(path) {
+  if (radioBusy && path !== '/radio/state') return;
+  radioBusy = path !== '/radio/state';
+  try { radio = await (await fetch(RADIO + path, { cache: 'no-store' })).json(); }
+  catch (e) { radio = null; }
+  trackListening(radio);
+  radioBusy = false;
+  renderRadio();
+}
+// result of the nightly station test (check-stations.py): dead stations greyed out with a warning sign, backup URL with a dot
+let health = { dead: [], backup: [] };
+async function loadStations() {
+  try { stations = await (await fetch('radio.json?' + Date.now(), { cache: 'no-store' })).json(); } catch (e) {}
+  try { health = await (await fetch('radio-health.json?' + Date.now(), { cache: 'no-store' })).json(); } catch (e) {}
+  renderStations();
+}
+function miniLogo(id) {
+  let logo = null;
+  if (stations) stations.groups.forEach(g => g.stations.forEach(s => { if (s.id === id && s.logo) logo = s.logo; }));
+  return logo ? `<img class="mini" src="${esc(logo)}" alt="">` : '▶ ';
+}
+const sleepText = r => r && r.sleepUntil ? ' · ' + RT.until + ' ' + hm(new Date(r.sleepUntil)) : '';
+// most played: listening time of each station (seconds) in the browser storage on the phone;
+// every play counts, also when started from another device, because the page polls the radio state every few seconds
+const store = {
+  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let listenAt = 0;
+function trackListening(r) {
+  const now = Date.now();
+  if (r && r.state === 'playing' && r.id) {
+    if (listenAt) {
+      const h = store.get('radioListen', {});
+      h[r.id] = (h[r.id] || 0) + Math.min(now - listenAt, 20000) / 1000;
+      store.set('radioListen', h);
+    }
+    listenAt = now;
+    store.set('radioLast', r.id);
+  } else listenAt = 0;
+}
+function topStations() {
+  const all = [], h = store.get('radioListen', {});
+  if (stations) stations.groups.forEach(g => g.stations.forEach(s => all.push(s)));
+  const top = all.filter(s => h[s.id] > 0).sort((a, b) => h[b.id] - h[a.id]);
+  for (const s of all) { if (top.length >= 3) break; if (!top.includes(s)) top.push(s); }   // no history yet: first stations of the list
+  return top.slice(0, 3);
+}
+const ICON_PLAY = "<svg viewBox='0 0 24 24'><path d='M8 5.5v13l10.5-6.5z' class='f'/></svg>";
+const ICON_STOP = "<svg viewBox='0 0 24 24'><rect x='6.5' y='6.5' width='11' height='11' rx='1.5' class='f'/></svg>";
+const radioOn = r => r && (r.state === 'playing' || r.state === 'connecting');
+function renderRadio() {
+  const r = radio;
+  let line, cls = 'st';
+  if (!r) { line = RT.na; cls += ' off'; }
+  else if (r.state === 'playing') line = `${miniLogo(r.id)}${esc(r.name)} · ${esc(outName(r.output))}${sleepText(r)}`;
+  else if (r.state === 'connecting') line = `⏳ ${esc(r.name)}: ${esc(r.info || RT.connecting)}`;
+  else if (r.state === 'error') { line = `⚠ ${esc(r.name)}: ${esc(r.info)}`; cls += ' off'; }
+  else { line = RT.off + (r.info ? ' · ' + esc(r.info) : ''); cls += ' off'; }
+  $('radioLine').className = cls;
+  $('radioLine').innerHTML = !r ? RT.na : radioOn(r) ? `${miniLogo(r.id)}${esc(r.name)}` : r.state === 'error' ? `⚠ ${esc(r.name)}` : RT.off;
+  $('radioVol').textContent = r && radioOn(r) ? r.volume + '%' : '';
+  $('rToggle').innerHTML = radioOn(r) ? ICON_STOP : ICON_PLAY;
+  const rem = r && r.sleepUntil ? Math.ceil((r.sleepUntil - Date.now()) / 60000) : 0;
+  $('rSleep').textContent = rem > 0 ? rem + '′' : '';
+  $('radioTop').innerHTML = topStations().map((s, i) =>
+    `<div class="rtop${radioOn(r) && r.id === s.id ? ' on' : ''}" data-id="${esc(s.id)}">${s.logo ? `<img src="${esc(s.logo)}" alt="">` : ''}<span>${esc(s.name)}</span></div>`).join('');
+  renderHero(r);
+  $('rpVol').textContent = r ? r.volume + '%' : '–';
+  $('rpStop').innerHTML = radioOn(r) ? ICON_STOP : ICON_PLAY;
+  $('rpVbar').innerHTML = Array.from({ length: 10 }, (_, i) => `<i${r && i < Math.round(r.volume / 10) ? ' class="on"' : ''}></i>`).join('');
+  const active = r && (r.state === 'playing' || r.state === 'connecting') ? r.id : null;
+  document.querySelectorAll('.tile').forEach(el => el.classList.toggle('on', el.dataset.id === active));
+}
+// Radio panel: group tabs; when opened, it shows the group of the playing (or last played) station
+let rpTab = null;
+const findStation = id => { let f = null; if (stations) stations.groups.forEach(g => g.stations.forEach(x => { if (x.id === id) f = x; })); return f; };
+const tabName = g => g.tab || g.name.split(':')[0].split(' i ')[0];
+function renderStations() {
+  if (!stations) return;
+  if (rpTab == null) {
+    const cur = (radio && radio.id) || store.get('radioLast', null);
+    rpTab = Math.max(0, stations.groups.findIndex(g => g.stations.some(x => x.id === cur)));
+  }
+  $('rpTabs').innerHTML = stations.groups.map((g, i) => `<span class="tab${i === rpTab ? ' on' : ''}" data-tab="${i}">${esc(tabName(g))}</span>`).join('');
+  $('rpStations').innerHTML = stations.groups.map((g, i) => `<div class="rp-group" data-sec="${i}">${esc(g.name)}</div><div class="tiles">` +
+    g.stations.map(x => `<div class="tile${(health.dead || []).includes(x.id) ? ' dead' : (health.backup || []).includes(x.id) ? ' backup' : ''}" data-id="${esc(x.id)}"${(health.dead || []).includes(x.id) ? ` title="${esc(T.deadTitle)} ${esc(health.checked)}"` : ''}>${x.logo ? `<div class="logo"><img src="${esc(x.logo)}" alt="" loading="lazy"></div>` : ''}<b>${esc(x.name)}</b><span>${esc(x.tag || '')}&nbsp;</span></div>`).join('') +
+    '</div>').join('');
+  if ($('radioPanel').classList.contains('open')) jumpTo(rpTab, false);
+  renderRadio();
+}
+// tab -> scroll the list to the group; scrolling the list -> highlight the tab of the current group (and bring it into view)
+function markTab(i) {
+  rpTab = i;
+  const tabs = $('rpTabs');
+  tabs.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', +t.dataset.tab === i));
+  const t = tabs.querySelector(`[data-tab="${i}"]`);
+  if (t) tabs.scrollTo({ left: t.offsetLeft - (tabs.clientWidth - t.offsetWidth) / 2, behavior: 'smooth' });
+}
+function jumpTo(i, smooth) {
+  const sec = $('rpStations').querySelector(`[data-sec="${i}"]`);
+  if (sec) $('rpStations').scrollTo({ top: sec.offsetTop - 2, behavior: smooth ? 'smooth' : 'auto' });
+  markTab(i);
+}
+$('rpStations').addEventListener('scroll', () => {
+  bumpPanel();
+  const list = $('rpStations');
+  let cur = 0;
+  list.querySelectorAll('[data-sec]').forEach(sec => { if (sec.offsetTop <= list.scrollTop + 40) cur = +sec.dataset.sec; });
+  if (list.scrollTop + list.clientHeight >= list.scrollHeight - 4) cur = stations.groups.length - 1;   // end of the list: last group
+  if (cur !== rpTab) markTab(cur);
+}, { passive: true });
+// "Now playing": logo (if any) of the playing (or last played) station, glow in the colour of the logo
+const glowCache = {};
+function logoGlow(src, cb) {
+  if (glowCache[src]) return cb(glowCache[src]);
+  const img = new Image();
+  img.onload = () => {
+    let c = '208, 148, 95';
+    try {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 24;
+      const x = cv.getContext('2d'); x.drawImage(img, 0, 0, 24, 24);
+      const d = x.getImageData(0, 0, 24, 24).data;
+      let R = 0, G = 0, B = 0, W = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]), sat = mx ? (mx - mn) / mx : 0;
+        if (d[i + 3] < 128 || sat < .35 || mx < 60) continue;
+        R += d[i] * sat; G += d[i + 1] * sat; B += d[i + 2] * sat; W += sat;
+      }
+      if (W) c = `${Math.round(R / W)}, ${Math.round(G / W)}, ${Math.round(B / W)}`;
+    } catch (e) {}
+    glowCache[src] = c; cb(c);
+  };
+  img.src = src;
+}
+let heroId;
+function renderHero(r) {
+  const id = (r && r.id) || store.get('radioLast', null) || (topStations()[0] || {}).id;
+  const st = findStation(id);
+  if (id !== heroId && st) {
+    heroId = id;
+    $('rpLogo').innerHTML = st.logo ? `<img src="${esc(st.logo)}" alt="">` : '📻';
+    $('rpName').textContent = st.name;
+    if (st.logo) logoGlow(st.logo, c => $('radioPanel').style.setProperty('--glow', c));
+  }
+  $('radioPanel').classList.toggle('playing', !!(r && r.state === 'playing'));
+  $('rpNow').innerHTML = !r ? RT.na : r.state === 'playing' ? esc(outName(r.output)) + sleepText(r)
+    : r.state === 'connecting' ? RT.connecting : r.state === 'error' ? '⚠ ' + esc(r.info) : RT.off;
+}
+function bumpPanel() { clearTimeout(panelTimer); panelTimer = setTimeout(closePanel, 30000); }
+function openPanel() { $('radioPanel').classList.add('open'); rpTab = null; renderStations(); loadStations(); radioCall('/radio/state'); bumpPanel(); }
+function closePanel() { $('radioPanel').classList.remove('open'); clearTimeout(panelTimer); }
+// Radio card: buttons and top 3 work directly; a tap anywhere else opens the full station list
+$('radioSec').addEventListener('click', e => {
+  const top = e.target.closest('.rtop'), act = e.target.closest('[data-act]');
+  if (top) { radioCall('/radio/play?id=' + encodeURIComponent(top.dataset.id)); return; }
+  if (!act) { openPanel(); return; }
+  const a = act.dataset.act, vol = radio ? radio.volume : 50;
+  if (a === 'toggle') {
+    if (radioOn(radio)) radioCall('/radio/stop');
+    else { const id = store.get('radioLast', null) || (topStations()[0] || {}).id; if (id) radioCall('/radio/play?id=' + encodeURIComponent(id)); }
+  } else if (a === 'down') radioCall('/radio/volume?v=' + Math.max(0, vol - 10));
+  else if (a === 'up') radioCall('/radio/volume?v=' + Math.min(100, vol + 10));
+  else if (a === 'sleep') {        // repeated taps: 15 -> 30 -> 60 -> 90 min -> no sleep timer
+    const rem = radio && radio.sleepUntil ? (radio.sleepUntil - Date.now()) / 60000 : 0;
+    radioCall('/radio/sleep?min=' + ([15, 30, 60, 90].find(m => m > rem + 1) || 0));
+  }
+});
+$('rpClose').addEventListener('click', e => { e.stopPropagation(); closePanel(); });
+$('radioPanel').addEventListener('click', e => {
+  bumpPanel();
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { jumpTo(+tab.dataset.tab, true); return; }
+  const tile = e.target.closest('.tile');
+  if (tile) { radioCall('/radio/play?id=' + encodeURIComponent(tile.dataset.id)); return; }
+  const sl = e.target.closest('[data-min]');
+  if (sl) { radioCall('/radio/sleep?min=' + sl.dataset.min); return; }
+  if (e.target.closest('#rpStop')) {
+    if (radioOn(radio)) radioCall('/radio/stop');
+    else { const id = store.get('radioLast', null) || (topStations()[0] || {}).id; if (id) radioCall('/radio/play?id=' + encodeURIComponent(id)); }
+  }
+  else if (e.target.closest('#rpVolUp')) radioCall('/radio/volume?v=' + Math.min(100, (radio ? radio.volume : 50) + 10));
+  else if (e.target.closest('#rpVolDown')) radioCall('/radio/volume?v=' + Math.max(0, (radio ? radio.volume : 50) - 10));
+});
+let radioTick = 0;
+setInterval(() => { radioTick++; if ($('radioPanel').classList.contains('open') || radioTick % 3 === 0) radioCall('/radio/state'); }, 5000);
+radioCall('/radio/state'); loadStations();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>

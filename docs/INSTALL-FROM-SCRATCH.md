@@ -147,6 +147,8 @@ Termux:  ln -sfn "/storage/ABCD-1234/Media" ~/Media
 ```
 Ubuntu sees the drive as `/media/usb1` because of `--bind /storage/ABCD-1234:/media/usb1` in `start-server.sh`. Put your drive ID in **`USB_ID`** and your top folder in **`MEDIA_DIR`** at the top of `scripts/start-server.sh` and `scripts/status-screen/status-server.py`.
 
+**4.2a. Optional second drive** (e.g. a separate kids library). Plex's age ratings for managed users need Plex Pass; a library on its own drive that only the kids profile can see is the free workaround. NTFS works through the phone's `ntfs-3g` (tested on 2026-10-02 with Direct Play on a TV). Put its ID in **`KIDS_USB_ID`** and its top folder in **`KIDS_DIR`** in `scripts/start-server.sh`, and the ID in `KIDS_USB_ID` in `status-server.py`. Ubuntu then sees it as `/media/usb2` (only when it is mounted), and the dashboard shows it as "Kids drive". In Plex: add a library pointing to `/media/usb2/<folder>` and share only that library with the kids' managed user.
+
 **4.3. File naming** (Plex identifies films and episodes by it):
 ```
 Movies/Title (Year).mp4
@@ -201,7 +203,7 @@ Termux:  echo "~/start-server.sh termux-open" > ~/.bashrc
 **6.3. Cron** ([`scripts/crontab.txt`](../scripts/crontab.txt)):
 ```
 Termux:  pkg install -y cronie
-Termux:  crontab crontab.txt        (or crontab -e and paste the 3 lines)
+Termux:  crontab crontab.txt        (or crontab -e and paste the lines; there are 4: updates, two watchdogs, radio station check)
 ```
 
 ---
@@ -254,17 +256,18 @@ One-click repair: [`scripts/windows/fix-drive-M.cmd`](../scripts/windows/fix-dri
 ```
 Termux:  pkg install -y python
 Termux:  mkdir -p ~/status/www
-scp -P 8022 scripts/status-screen/status-server.py scripts/status-screen/start-status.sh scripts/status-screen/check-app.sh u0_a123@192.168.1.50:status/
+scp -P 8022 scripts/status-screen/status-server.py scripts/status-screen/start-status.sh scripts/status-screen/check-app.sh scripts/status-screen/check-stations.py u0_a123@192.168.1.50:status/
 scp -P 8022 scripts/status-screen/www/* u0_a123@192.168.1.50:status/www/
 Termux:  sed -i 's/\r$//' ~/status/*.sh ~/status/*.py && chmod +x ~/status/*.sh ~/status/*.py
 Termux:  ~/status/start-status.sh && curl -s http://127.0.0.1:8099/status.json
 ```
-Set `LANG`, `CITY`, `LAT`, `LON`, `TZ` (and optionally `DAY_FROM`/`DAY_TO`) at the top of `www/index.html`.
+Set `LANG`, `CITY`, `LAT`, `LON`, `TZ` and `PLEX_USERS` (and the other options listed there) at the top of `www/index.html`, and `USB_ID`, `MEDIA_DIR` (optionally `KIDS_USB_ID`) at the top of `status-server.py`.
+`www/` includes `radio.json` (90 radio stations) and `earth.json` (the spinning Earth). Station logos are not included (trademarks): `python tools/stations-uk.py scripts/status-screen/www` and `tools/stations-usa.py` download them for your own use into `www/logos/`, or the tiles simply show the names. Check that the radio works: `~/status/check-stations.py` (prints how many stations play).
 
 **10.2. The Server Status app**: build and install as described in [../status-app/README.md](../status-app/README.md):
 ```
 bash status-app/build.sh
-adb -s <phone> install -r status-app/server-status.apk
+adb -s <phone> install -r status-app/server-status.apk      (or the ready-made server-status-1.3.3.apk from Releases)
 adb -s <phone> shell dumpsys deviceidle whitelist +pl.serwerplex.status
 ```
 Then apply the settings from section 7 (column "Server Status") and open the app once. It asks for the Termux permission; tap Allow.
@@ -273,7 +276,7 @@ Then apply the settings from section 7 (column "Server Status") and open the app
 ```
 Termux:  echo "allow-external-apps = true" >> ~/.termux/termux.properties && termux-reload-settings
 ```
-Also needed: the 3 cron lines from `scripts/crontab.txt`, and "Display over other apps" for Termux.
+Also needed: the cron lines from `scripts/crontab.txt`, and "Display over other apps" for Termux.
 
 ---
 
@@ -287,5 +290,7 @@ Also needed: the 3 cron lines from `scripts/crontab.txt`, and "Display over othe
 | Plex crash | `pkill -f "[P]lex Media Server"` | within 5 min `~/watchdog.log` shows `[cron] … Plex` |
 | Termux killed | `adb shell am force-stop com.termux` | within 3–4 min `[status-app] …` and everything is back |
 | Status app closed | `adb shell am force-stop pl.serwerplex.status` | reopened within 20 min (daytime) |
+| Radio | Radio card → ▶, then `curl http://192.168.1.50:8098/radio/state` | `"state":"playing"` |
+| Radio without internet | while it plays, switch the router's internet off for a minute | "no internet, waiting for the network", then it plays again by itself |
 
 All of these passed on 2026-10-01 (results in [OPERATIONS.md, section 13](OPERATIONS.md#13-watchdogs-what-happens-when-something-stops)).
